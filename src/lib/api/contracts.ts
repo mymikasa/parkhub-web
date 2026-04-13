@@ -72,3 +72,21 @@ export const updateParkingLotSchema = z.object({
 
 export type CreateParkingLotFormData = z.infer<typeof createParkingLotSchema>;
 export type UpdateParkingLotFormData = z.infer<typeof updateParkingLotSchema>;
+
+export const exceptionHandleSchema = z.object({
+  plateNumber: z.string().min(1, "请输入车牌号"),
+  remark: z.string().optional(),
+});
+
+export type ExceptionHandleFormData = z.infer<typeof exceptionHandleSchema>;
+
+export const registerDeviceSchema = z.object({
+  serialNumber: z.string().min(1, "请输入设备序列号"),
+  parkingLotId: z.string().min(1, "请选择停车场"),
+  laneId: z.string().min(1, "请选择出入口"),
+  type: z.enum(["integrated", "camera_only", "barrier_only"], {
+    required_error: "请选择设备类型",
+  }),
+});
+
+export type RegisterDeviceFormData = z.infer<typeof registerDeviceSchema>;

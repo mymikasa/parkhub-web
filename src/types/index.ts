@@ -111,3 +111,91 @@ export interface UpdateLanesRequest {
     deviceId?: string;
   }>;
 }
+
+// === Entry-Exit Records ===
+
+export type RecordType = "entry" | "exit";
+export type RecordStatus = "normal" | "paid" | "entry_no_exit" | "exit_no_entry" | "recognition_failed";
+export type ExceptionType = "entry_no_exit" | "exit_no_entry" | "recognition_failed";
+
+export interface EntryExitRecord {
+  id: string;
+  plateNumber: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  laneName: string;
+  type: RecordType;
+  status: RecordStatus;
+  fee: number | null;
+  time: string;
+  imageUrl?: string;
+  deviceSerialNumber?: string;
+}
+
+export interface RecordSummary {
+  totalExceptions: number;
+  entryNoExit: number;
+  exitNoEntry: number;
+  recognitionFailed: number;
+}
+
+export interface RecordFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  plateNumber?: string;
+  parkingLotId?: string;
+  type?: RecordType;
+  status?: RecordStatus | "exception";
+  page?: number;
+  pageSize?: number;
+}
+
+export interface ExceptionHandleRequest {
+  plateNumber: string;
+  remark?: string;
+}
+
+// === Device Management ===
+
+export type DeviceType = "integrated" | "camera_only" | "barrier_only";
+
+export interface Device {
+  id: string;
+  serialNumber: string;
+  name: string;
+  type: DeviceType;
+  status: DeviceOnlineStatus;
+  parkingLotId: string;
+  parkingLotName: string;
+  laneName: string;
+  laneType: LaneType;
+  lastHeartbeat: string | null;
+  todayTraffic: number | null;
+}
+
+export interface DeviceSummary {
+  total: number;
+  online: number;
+  offline: number;
+  todayTraffic: number;
+  onlineRate: number;
+}
+
+export interface DeviceFilters {
+  page?: number;
+  pageSize?: number;
+  status?: DeviceOnlineStatus;
+  parkingLotId?: string;
+  keyword?: string;
+}
+
+export interface RegisterDeviceRequest {
+  serialNumber: string;
+  parkingLotId: string;
+  laneId: string;
+  type: DeviceType;
+}
+
+export interface DeviceCommandRequest {
+  action: "up" | "down";
+}

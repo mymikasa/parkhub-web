@@ -1,5 +1,12 @@
 import { setupWorker } from "msw/browser";
 import { authHandlers } from "./handlers/auth";
 import { parkingLotHandlers } from "./handlers/parking-lots";
+import { recordHandlers } from "./handlers/records";
+import { deviceHandlers } from "./handlers/devices";
 
-export const worker = setupWorker(...authHandlers, ...parkingLotHandlers);
+export const worker = setupWorker(
+  ...authHandlers,
+  ...parkingLotHandlers,
+  ...recordHandlers,
+  ...deviceHandlers
+);
