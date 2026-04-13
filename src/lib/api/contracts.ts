@@ -54,3 +54,21 @@ export interface OAuthCallbackRequest {
   provider: string;
   code: string;
 }
+
+export const createParkingLotSchema = z.object({
+  name: z.string().min(1, "请输入车场名称"),
+  address: z.string().min(1, "请输入车场地址"),
+  totalSpots: z.coerce.number().int().positive("总车位数必须大于0"),
+  type: z.enum(["underground", "ground", "mechanical"]).optional(),
+});
+
+export const updateParkingLotSchema = z.object({
+  name: z.string().min(1).optional(),
+  address: z.string().min(1).optional(),
+  totalSpots: z.coerce.number().int().positive().optional(),
+  type: z.enum(["underground", "ground", "mechanical"]).optional(),
+  status: z.enum(["operating", "suspended"]).optional(),
+});
+
+export type CreateParkingLotFormData = z.infer<typeof createParkingLotSchema>;
+export type UpdateParkingLotFormData = z.infer<typeof updateParkingLotSchema>;
