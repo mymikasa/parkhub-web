@@ -301,3 +301,116 @@ export interface CalculateFeeResult {
   unitPrice: number;
   totalFee: number;
 }
+
+// === Monitor ===
+
+export interface MonitorKPI {
+  todayEntries: number;
+  todayExits: number;
+  currentVehicles: number;
+  todayRevenue: number;
+  entryChangeRate: number;
+  exitChangeRate: number;
+  revenueChangeRate: number;
+  totalSpots: number;
+  usageRate: number;
+}
+
+export interface MonitorEvent {
+  id: string;
+  plateNumber: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  laneName: string;
+  type: "entry" | "exit" | "exception";
+  fee: number | null;
+  time: string;
+  imageUrl?: string;
+  exceptionReason?: string;
+}
+
+export interface ParkingLotOccupancy {
+  parkingLotId: string;
+  parkingLotName: string;
+  totalSpots: number;
+  availableSpots: number;
+  occupiedSpots: number;
+  usageRate: number;
+}
+
+export interface LongParkAlert {
+  id: string;
+  plateNumber: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  entryTime: string;
+  duration: string;
+  level: "warning" | "critical";
+}
+
+export interface MonitorRealtimeData {
+  kpi: MonitorKPI;
+  events: MonitorEvent[];
+  occupancies: ParkingLotOccupancy[];
+  longParkAlerts: LongParkAlert[];
+}
+
+// === Operator ===
+
+export type OperatorEventType = "entry" | "exit" | "exception" | "device_offline";
+
+export interface OperatorEvent {
+  id: string;
+  type: OperatorEventType;
+  plateNumber?: string;
+  parkingLotId?: string;
+  parkingLotName?: string;
+  laneName?: string;
+  fee?: number;
+  time: string;
+  message: string;
+  deviceSerialNumber?: string;
+}
+
+export interface OperatorException {
+  id: string;
+  plateNumber: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  laneName?: string;
+  type: "entry_no_exit" | "exit_no_entry" | "recognition_failed";
+  entryTime?: string;
+  overtime?: string;
+  time: string;
+}
+
+export interface LiftBarrierRequest {
+  parkingLotId: string;
+  laneId: string;
+  reason?: string;
+}
+
+export interface ManualChargeRequest {
+  plateNumber: string;
+  amount: number;
+  paymentMethod: "wechat" | "alipay" | "cash";
+  remark?: string;
+}
+
+export interface CorrectPlateRequest {
+  plateNumber: string;
+  vehicleType?: "temporary" | "monthly";
+  exceptionId?: string;
+}
+
+export interface VehicleSearchResult {
+  plateNumber: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  laneName: string;
+  entryTime: string;
+  duration: string;
+  estimatedFee: number;
+  imageUrl?: string;
+  vehicleType: "temporary" | "monthly";
+}

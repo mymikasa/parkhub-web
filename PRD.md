@@ -32,7 +32,8 @@
 - 页面和业务组件不直接依赖 mock 数据
 - 所有业务读写都通过 `src/lib/api` 中的 typed client / service 完成
 - 开发和测试环境由 MSW 拦截 `/api/*` 请求返回 mock 数据
-- 后续接真实后端时，优先替换 API base URL、请求适配和字段映射层，而不是改页面组件
+- 文档中的 `/api/*` 为前端 contract facade，不要求与真实后端物理地址完全一致
+- 后续接真实后端时，优先替换 API base URL、rewrite、BFF 转发或字段映射层，而不是改页面组件
 
 认证采用完整 mock 闭环：
 
@@ -175,6 +176,22 @@
 - 不让页面组件直接 import mock JSON
 - 后续接真实后端时，页面层原则上零改动，主要替换请求地址、鉴权注入和字段映射
 
+### Contract Facade 原则
+
+PRD 中定义的 `/api/*` 路径是前端稳定 contract facade，作用是统一页面依赖、mock 实现和未来真实接口适配层，不等同于真实后端必须暴露的物理地址。
+
+接入真实后端时按以下优先级处理：
+
+- 路径或域名不同：优先由 `apiClient` base URL、Next.js rewrite、proxy 或 BFF 转发层吸收
+- 返回字段略有差异：优先由 `src/lib/api/*.ts` 中的 service / adapter 层做映射
+- 返回结构差异很大，或需要聚合多个后端接口：由 BFF 层统一整形后再暴露给前端 contract facade
+
+约束：
+
+- 页面组件只依赖 facade contract，不直接依赖真实后端路径和原始响应结构
+- MSW handlers 必须严格实现 facade contract
+- 若真实后端 contract 变化，优先修改 adapter 或 BFF，不直接改页面组件
+
 ### 认证与会话设计
 
 - 登录态使用浏览器可持久化存储保存 mock session
@@ -296,16 +313,20 @@ src/
 | POST | `/api/auth/oauth/:provider/callback` | 第三方登录回跳换取 session |
 | GET | `/api/auth/me` | 获取当前登录用户 |
 | POST | `/api/auth/logout` | 登出 |
+| GET | `/api/tenants/summary` | 租户统计汇总 |
 | GET | `/api/tenants` | 租户列表、搜索、状态筛选、分页 |
 | POST | `/api/tenants` | 创建租户 |
 | PATCH | `/api/tenants/:id` | 更新租户 |
 | POST | `/api/tenants/:id/freeze` | 冻结租户 |
 | POST | `/api/tenants/:id/unfreeze` | 解冻租户 |
 | GET | `/api/tenants/:id/parking-lots` | 查看租户下停车场 |
-| GET | `/api/parking-lots` | 停车场列表、统计 |
+| GET | `/api/parking-lots` | 停车场列表、搜索、分页 |
+| GET | `/api/parking-lots/summary` | 停车场统计汇总 |
 | POST | `/api/parking-lots` | 创建停车场 |
 | PATCH | `/api/parking-lots/:id` | 更新停车场基本信息 |
+| GET | `/api/parking-lots/:id/lanes` | 查询车道与设备绑定配置 |
 | PUT | `/api/parking-lots/:id/lanes` | 更新车道与设备绑定 |
+| GET | `/api/devices/summary` | 设备统计汇总 |
 | GET | `/api/devices` | 设备列表、筛选、分页 |
 | POST | `/api/devices` | 注册设备 |
 | POST | `/api/devices/:id/command` | 远程控制指令 |
@@ -424,4 +445,5 @@ src/
 - 设计稿中的统一色板应映射为 CSS variables，避免颜色常量散落在组件中
 - `payment.html` 为独立移动端页面，不复用后台侧边栏布局
 - 实时监控和操作员工作台前期使用 `setInterval` 或轮询 hook 模拟实时性
-- 如果未来后端接口字段与 mock contract 不一致，优先在 `service` 或映射层收口，不直接改页面组件
+- 如果未来后端接口路径与 facade contract 不一致，优先通过 rewrite、proxy 或 BFF 适配
+- 如果未来后端接口字段与 mock contract 不一致，优先在 `service` / adapter 层收口，不直接改页面组件

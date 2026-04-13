@@ -5,6 +5,8 @@ import { recordHandlers } from "./handlers/records";
 import { deviceHandlers } from "./handlers/devices";
 import { tenantHandlers } from "./handlers/tenants";
 import { billingHandlers } from "./handlers/billing";
+import { monitorHandlers } from "./handlers/monitor";
+import { operatorHandlers } from "./handlers/operator";
 
 export const worker = setupWorker(
   ...authHandlers,
@@ -12,5 +14,7 @@ export const worker = setupWorker(
   ...recordHandlers,
   ...deviceHandlers,
   ...tenantHandlers,
-  ...billingHandlers
+  ...billingHandlers,
+  ...monitorHandlers,
+  ...operatorHandlers
 );
