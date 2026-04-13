@@ -199,3 +199,105 @@ export interface RegisterDeviceRequest {
 export interface DeviceCommandRequest {
   action: "up" | "down";
 }
+
+// === Tenant Management ===
+
+export type TenantStatus = "active" | "frozen";
+
+export interface Tenant {
+  id: string;
+  companyName: string;
+  description?: string;
+  creditCode?: string;
+  contactPerson: string;
+  contactPhone: string;
+  adminEmail?: string;
+  remark?: string;
+  parkingLotCount: number;
+  status: TenantStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TenantSummary {
+  total: number;
+  active: number;
+  frozen: number;
+  totalParkingLots: number;
+  avgParkingLotsPerTenant: number;
+}
+
+export interface TenantFilters {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  status?: TenantStatus;
+}
+
+export interface CreateTenantRequest {
+  companyName: string;
+  description?: string;
+  creditCode?: string;
+  contactPerson: string;
+  contactPhone: string;
+  adminEmail?: string;
+  remark?: string;
+}
+
+export interface UpdateTenantRequest {
+  companyName?: string;
+  description?: string;
+  creditCode?: string;
+  contactPerson?: string;
+  contactPhone?: string;
+  adminEmail?: string;
+  remark?: string;
+}
+
+// === Billing Rules ===
+
+export type BillingCycle = "hourly" | "half_hourly";
+
+export interface BillingRule {
+  id: string;
+  parkingLotId: string;
+  parkingLotName: string;
+  freeDurationMinutes: number;
+  unitPrice: number;
+  dailyCap: number | null;
+  billingCycle: BillingCycle;
+  enabled: boolean;
+  updatedAt: string;
+}
+
+export interface BillingLotOption {
+  id: string;
+  name: string;
+  status: ParkingLotStatus;
+  hasRule: boolean;
+}
+
+export interface BillingRuleListParams {
+  parkingLotId?: string;
+}
+
+export interface UpdateBillingRuleRequest {
+  freeDurationMinutes?: number;
+  unitPrice?: number;
+  dailyCap?: number | null;
+  billingCycle?: BillingCycle;
+}
+
+export interface CalculateFeeRequest {
+  parkingLotId: string;
+  entryTime: string;
+  exitTime: string;
+}
+
+export interface CalculateFeeResult {
+  duration: string;
+  freeDuration: string;
+  billableDuration: string;
+  unitPrice: number;
+  totalFee: number;
+}

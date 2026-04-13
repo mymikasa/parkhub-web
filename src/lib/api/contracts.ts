@@ -90,3 +90,50 @@ export const registerDeviceSchema = z.object({
 });
 
 export type RegisterDeviceFormData = z.infer<typeof registerDeviceSchema>;
+
+export const createTenantSchema = z.object({
+  companyName: z.string().min(1, "请输入公司名称"),
+  description: z.string().optional(),
+  creditCode: z.string().optional(),
+  contactPerson: z.string().min(1, "请输入联系人"),
+  contactPhone: z
+    .string()
+    .min(1, "请输入联系电话")
+    .regex(/^1[3-9]\d{9}$/, "请输入有效的手机号"),
+  adminEmail: z.string().email("请输入有效的邮箱地址").optional().or(z.literal("")),
+  remark: z.string().optional(),
+});
+
+export const updateTenantSchema = z.object({
+  companyName: z.string().min(1).optional(),
+  description: z.string().optional(),
+  creditCode: z.string().optional(),
+  contactPerson: z.string().min(1).optional(),
+  contactPhone: z
+    .string()
+    .regex(/^1[3-9]\d{9}$/, "请输入有效的手机号")
+    .optional()
+    .or(z.literal("")),
+  adminEmail: z.string().email("请输入有效的邮箱地址").optional().or(z.literal("")),
+  remark: z.string().optional(),
+});
+
+export type CreateTenantFormData = z.infer<typeof createTenantSchema>;
+export type UpdateTenantFormData = z.infer<typeof updateTenantSchema>;
+
+export const updateBillingRuleSchema = z.object({
+  freeDurationMinutes: z.coerce.number().int().min(0).max(120).optional(),
+  unitPrice: z.coerce.number().min(0.5).max(50).optional(),
+  dailyCap: z.union([z.coerce.number().min(0).max(500), z.null()]).optional(),
+  billingCycle: z.enum(["hourly", "half_hourly"]).optional(),
+});
+
+export type UpdateBillingRuleFormData = z.infer<typeof updateBillingRuleSchema>;
+
+export const calculateFeeSchema = z.object({
+  parkingLotId: z.string().min(1, "请选择停车场"),
+  entryTime: z.string().min(1, "请选择入场时间"),
+  exitTime: z.string().min(1, "请选择出场时间"),
+});
+
+export type CalculateFeeFormData = z.infer<typeof calculateFeeSchema>;
