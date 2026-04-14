@@ -414,3 +414,46 @@ export interface VehicleSearchResult {
   imageUrl?: string;
   vehicleType: "temporary" | "monthly";
 }
+
+// === Payment ===
+
+export type PaymentMethod = "wechat" | "alipay";
+export type PaymentStatus = "pending" | "paid" | "expired";
+
+export interface PaymentOrder {
+  id: string;
+  plateNumber: string;
+  parkingLotName: string;
+  entryLane: string;
+  vehicleImage?: string;
+  vehicleType: string;
+  entryTime: string;
+  currentTime: string;
+  duration: string;
+  freeDuration: string;
+  billableDuration: string;
+  unitPrice: number;
+  totalFee: number;
+  status: PaymentStatus;
+}
+
+export interface PaymentRequest {
+  orderId: string;
+  method: PaymentMethod;
+}
+
+export interface PaymentResult {
+  orderId: string;
+  plateNumber: string;
+  amount: number;
+  method: PaymentMethod;
+  paidAt: string;
+  departureDeadline: string;
+}
+
+export interface PaymentStatusResponse {
+  orderId: string;
+  status: PaymentStatus;
+  paidAt?: string;
+  departureDeadline?: string;
+}

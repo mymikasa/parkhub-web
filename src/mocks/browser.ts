@@ -7,6 +7,7 @@ import { tenantHandlers } from "./handlers/tenants";
 import { billingHandlers } from "./handlers/billing";
 import { monitorHandlers } from "./handlers/monitor";
 import { operatorHandlers } from "./handlers/operator";
+import { paymentHandlers } from "./handlers/payment";
 
 export const worker = setupWorker(
   ...authHandlers,
@@ -16,5 +17,6 @@ export const worker = setupWorker(
   ...tenantHandlers,
   ...billingHandlers,
   ...monitorHandlers,
-  ...operatorHandlers
+  ...operatorHandlers,
+  ...paymentHandlers
 );

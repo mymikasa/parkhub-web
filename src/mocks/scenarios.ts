@@ -4,3 +4,6 @@ export { recordHandlers } from "./handlers/records";
 export { deviceHandlers } from "./handlers/devices";
 export { tenantHandlers } from "./handlers/tenants";
 export { billingHandlers } from "./handlers/billing";
+export { monitorHandlers } from "./handlers/monitor";
+export { operatorHandlers } from "./handlers/operator";
+export { paymentHandlers } from "./handlers/payment";

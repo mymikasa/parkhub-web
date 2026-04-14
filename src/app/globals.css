@@ -49,9 +49,24 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-float,
-  .animate-float-delay {
+  .animate-float-delay,
+  .animate-fade-in,
+  .animate-success-pop,
+  .animate-pulse-ring {
     animation: none;
   }
+}
+
+*:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 .card-hover {
@@ -117,4 +132,62 @@ input[type="range"].billing-slider::-moz-range-track {
   height: 8px;
   background: #e2e8f0;
   border-radius: 9999px;
+}
+
+.card-shadow {
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.08);
+}
+
+.btn-wechat {
+  background: linear-gradient(135deg, #07c160 0%, #06ad56 100%);
+  transition: all 0.2s ease;
+}
+.btn-wechat:hover {
+  background: linear-gradient(135deg, #06ad56 0%, #059648 100%);
+  box-shadow: 0 4px 12px rgba(7, 193, 96, 0.4);
+}
+
+.btn-alipay {
+  background: linear-gradient(135deg, #1677ff 0%, #0958d9 100%);
+  transition: all 0.2s ease;
+}
+.btn-alipay:hover {
+  background: linear-gradient(135deg, #0958d9 0%, #003eb3 100%);
+  box-shadow: 0 4px 12px rgba(22, 119, 255, 0.4);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease forwards;
+}
+
+@keyframes successPop {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-success-pop {
+  animation: successPop 0.5s ease;
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  100% { transform: scale(1.4); opacity: 0; }
+}
+
+.animate-pulse-ring {
+  animation: pulseRing 1.5s ease infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in,
+  .animate-success-pop,
+  .animate-pulse-ring {
+    animation: none;
+  }
 }

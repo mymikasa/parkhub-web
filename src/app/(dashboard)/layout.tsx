@@ -27,9 +27,9 @@ export default function DashboardLayout({
     <AuthGuard>
       <div className="flex min-h-screen bg-surface-muted">
         <Sidebar />
-        <main className="flex-1 ml-64">
+        <main className="flex-1 lg:ml-64">
           <header className="bg-white border-b border-surface-border sticky top-0 z-10">
-            <div className="px-8 py-4">
+            <div className="px-4 lg:px-8 py-4 pl-14 lg:pl-8">
               {pageInfo && (
                 <>
                   <h1 className="text-xl font-semibold text-gray-900">

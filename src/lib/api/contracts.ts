@@ -137,3 +137,10 @@ export const calculateFeeSchema = z.object({
 });
 
 export type CalculateFeeFormData = z.infer<typeof calculateFeeSchema>;
+
+export const paymentSchema = z.object({
+  orderId: z.string().min(1, "缺少订单号"),
+  method: z.enum(["wechat", "alipay"], { required_error: "请选择支付方式" }),
+});
+
+export type PaymentFormData = z.infer<typeof paymentSchema>;
