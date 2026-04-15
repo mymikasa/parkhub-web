@@ -3,27 +3,18 @@ import { z } from "zod";
 import { loginSchema, smsLoginSchema } from "@/lib/api/contracts";
 
 describe("loginSchema validation", () => {
-  it("accepts valid email login", () => {
+  it("accepts valid username/password login", () => {
     const result = loginSchema.safeParse({
-      email: "admin@parkhub.test",
+      username: "admin",
       password: "ParkHub123",
       rememberMe: true,
     });
     expect(result.success).toBe(true);
   });
 
-  it("rejects empty email", () => {
+  it("rejects empty username", () => {
     const result = loginSchema.safeParse({
-      email: "",
-      password: "ParkHub123",
-      rememberMe: true,
-    });
-    expect(result.success).toBe(false);
-  });
-
-  it("rejects invalid email format", () => {
-    const result = loginSchema.safeParse({
-      email: "not-an-email",
+      username: "",
       password: "ParkHub123",
       rememberMe: true,
     });
@@ -32,7 +23,7 @@ describe("loginSchema validation", () => {
 
   it("rejects empty password", () => {
     const result = loginSchema.safeParse({
-      email: "admin@parkhub.test",
+      username: "admin",
       password: "",
       rememberMe: true,
     });

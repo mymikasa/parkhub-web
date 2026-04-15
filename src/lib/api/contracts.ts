@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().min(1, "请输入账号").email("请输入有效的邮箱地址"),
+  username: z.string().min(1, "请输入账号"),
   password: z.string().min(1, "请输入密码"),
   rememberMe: z.boolean(),
 });
@@ -22,9 +22,8 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 export type SmsLoginFormData = z.infer<typeof smsLoginSchema>;
 
 export interface LoginRequest {
-  email: string;
+  username: string;
   password: string;
-  rememberMe: boolean;
 }
 
 export interface SmsLoginRequest {
@@ -33,7 +32,42 @@ export interface SmsLoginRequest {
   rememberMe: boolean;
 }
 
+export interface BackendUser {
+  userId: string;
+  tenantId?: string;
+  username: string;
+  email: string;
+  phone: string;
+  realName: string;
+  role: string;
+  status?: string;
+}
+
 export interface LoginResponse {
+  accessToken: string;
+  refreshToken: string;
+  accessExpiresIn: number;
+  tokenType: string;
+  user: BackendUser;
+}
+
+export interface RefreshTokenRequest {
+  refreshToken: string;
+}
+
+export interface RefreshTokenResponse {
+  accessToken: string;
+  refreshToken: string;
+  accessExpiresIn: number;
+  tokenType: string;
+}
+
+export interface LogoutRequest {
+  refreshToken: string;
+}
+
+// 以下 SMS / OAuth 仍走 MSW mock，保留旧形态
+export interface MockedAuthResponse {
   token: string;
   user: {
     id: string;

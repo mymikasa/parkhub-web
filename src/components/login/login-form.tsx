@@ -9,6 +9,9 @@ import { OAuthButtons } from "./oauth-buttons";
 
 type Tab = "account" | "phone";
 
+// TODO: 后端补齐 OAuth 接口后恢复入口
+const SHOW_OAUTH = false;
+
 export function LoginForm() {
   const [tab, setTab] = useState<Tab>("account");
 
@@ -72,13 +75,17 @@ export function LoginForm() {
 
             {tab === "account" ? <AccountForm /> : <PhoneForm />}
 
-            <div className="flex items-center gap-4 my-8">
-              <div className="flex-1 h-px bg-gray-200" />
-              <span className="text-xs text-gray-400">其他方式</span>
-              <div className="flex-1 h-px bg-gray-200" />
-            </div>
+            {SHOW_OAUTH && (
+              <>
+                <div className="flex items-center gap-4 my-8">
+                  <div className="flex-1 h-px bg-gray-200" />
+                  <span className="text-xs text-gray-400">其他方式</span>
+                  <div className="flex-1 h-px bg-gray-200" />
+                </div>
 
-            <OAuthButtons />
+                <OAuthButtons />
+              </>
+            )}
           </div>
         </div>
 

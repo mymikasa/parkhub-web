@@ -6,7 +6,7 @@ export function MswProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.NEXT_PUBLIC_ENABLE_MOCK === "true") {
       import("@/mocks/browser").then(({ worker }) => {
         worker.start({ onUnhandledRequest: "bypass" }).then(() => {
           setReady(true);

@@ -22,7 +22,7 @@ export function AccountForm() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "",
+      username: "",
       password: "",
       rememberMe: true,
     },
@@ -32,7 +32,7 @@ export function AccountForm() {
     setServerError("");
     try {
       await login({
-        email: data.email,
+        username: data.username,
         password: data.password,
         rememberMe: data.rememberMe,
       });
@@ -49,7 +49,7 @@ export function AccountForm() {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1.5">
+        <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
           账号
         </label>
         <div className="relative">
@@ -59,17 +59,17 @@ export function AccountForm() {
             </svg>
           </div>
           <input
-            id="email"
+            id="username"
             type="text"
             autoComplete="username"
-            placeholder="请输入账号或邮箱…"
+            placeholder="请输入账号…"
             spellCheck={false}
-            {...register("email")}
+            {...register("username")}
             className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
           />
         </div>
-        {errors.email && (
-          <p className="mt-1 text-xs text-red-500">{errors.email.message}</p>
+        {errors.username && (
+          <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>
         )}
       </div>
 

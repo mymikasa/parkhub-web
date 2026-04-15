@@ -1,7 +1,7 @@
-import type { Session } from "@/types";
+import type { Session, User } from "@/types";
 import { AUTH_STORAGE_KEY } from "@/lib/constants";
 
-const SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
+const DEFAULT_SESSION_DURATION_MS = 7 * 24 * 60 * 60 * 1000;
 
 function getStorage(rememberMe: boolean): Storage {
   return rememberMe ? localStorage : sessionStorage;
@@ -40,14 +40,19 @@ export function clearSession(): void {
 }
 
 export function createSession(
-  token: string,
-  user: Session["user"],
-  rememberMe: boolean
+  accessToken: string,
+  user: User,
+  rememberMe: boolean,
+  options?: { refreshToken?: string; expiresInSeconds?: number }
 ): Session {
+  const expiresInMs = options?.expiresInSeconds
+    ? options.expiresInSeconds * 1000
+    : DEFAULT_SESSION_DURATION_MS;
   return {
-    token,
+    accessToken,
+    refreshToken: options?.refreshToken,
     user,
-    expiresAt: Date.now() + SESSION_DURATION_MS,
+    expiresAt: Date.now() + expiresInMs,
     rememberMe,
   };
 }

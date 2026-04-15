@@ -8,7 +8,7 @@ import {
 import type { Session } from "@/types";
 
 const mockSession = (overrides?: Partial<Session>): Session => ({
-  token: "pkh_mock_test_token",
+  accessToken: "pkh_mock_test_token",
   user: {
     id: "usr_001",
     name: "测试用户",
@@ -47,7 +47,7 @@ describe("session storage", () => {
       saveSession(session);
       const loaded = loadSession();
       expect(loaded).toBeTruthy();
-      expect(loaded!.token).toBe(session.token);
+      expect(loaded!.accessToken).toBe(session.accessToken);
       expect(loaded!.user.name).toBe(session.user.name);
     });
 
@@ -56,7 +56,7 @@ describe("session storage", () => {
       saveSession(session);
       const loaded = loadSession();
       expect(loaded).toBeTruthy();
-      expect(loaded!.token).toBe(session.token);
+      expect(loaded!.accessToken).toBe(session.accessToken);
     });
 
     it("returns null when no session exists", () => {
@@ -83,7 +83,7 @@ describe("session storage", () => {
   describe("createSession", () => {
     it("creates a session with correct structure", () => {
       const session = createSession("token123", mockSession().user, true);
-      expect(session.token).toBe("token123");
+      expect(session.accessToken).toBe("token123");
       expect(session.rememberMe).toBe(true);
       expect(session.expiresAt).toBeGreaterThan(Date.now());
     });

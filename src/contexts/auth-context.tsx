@@ -9,14 +9,14 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@/types";
-import { authService } from "@/lib/api/auth";
+import { authService, mapBackendUser } from "@/lib/api/auth";
 import {
   saveSession,
   loadSession,
   clearSession,
   createSession,
 } from "@/lib/session/storage";
-import type { LoginRequest, SmsLoginRequest } from "@/lib/api/contracts";
+import type { SmsLoginRequest } from "@/lib/api/contracts";
 
 interface AuthState {
   user: User | null;
@@ -24,8 +24,14 @@ interface AuthState {
   isAuthenticated: boolean;
 }
 
+interface PasswordLoginInput {
+  username: string;
+  password: string;
+  rememberMe: boolean;
+}
+
 interface AuthActions {
-  login: (req: LoginRequest) => Promise<void>;
+  login: (req: PasswordLoginInput) => Promise<void>;
   loginBySms: (req: SmsLoginRequest) => Promise<void>;
   oauthLogin: (provider: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -44,48 +50,87 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const session = loadSession();
-    if (session) {
-      authService
-        .getCurrentUser()
-        .then((user) => {
-          setState({ user, isLoading: false, isAuthenticated: true });
-        })
-        .catch(() => {
-          clearSession();
-          setState({ user: null, isLoading: false, isAuthenticated: false });
-        });
-    } else {
+    if (!session) {
       setState((s) => ({ ...s, isLoading: false }));
+      return;
     }
+    // 乐观先用缓存 user 渲染，再通过 /me 校验 token 有效性
+    setState({
+      user: session.user,
+      isLoading: false,
+      isAuthenticated: true,
+    });
+    authService
+      .getCurrentUser()
+      .then(({ user }) => {
+        const mapped = mapBackendUser(user);
+        saveSession({ ...session, user: mapped });
+        setState({ user: mapped, isLoading: false, isAuthenticated: true });
+      })
+      .catch(() => {
+        clearSession();
+        setState({ user: null, isLoading: false, isAuthenticated: false });
+      });
   }, []);
 
-  const login = useCallback(async (req: LoginRequest) => {
-    const res = await authService.loginByEmail(req);
-    const session = createSession(res.token, res.user, req.rememberMe);
-    saveSession(session);
-    setState({ user: res.user, isLoading: false, isAuthenticated: true });
-  }, []);
-
-  const loginBySms = useCallback(async (req: SmsLoginRequest) => {
-    const res = await authService.loginBySms(req);
-    const session = createSession(res.token, res.user, req.rememberMe);
-    saveSession(session);
-    setState({ user: res.user, isLoading: false, isAuthenticated: true });
-  }, []);
-
-  const oauthLogin = useCallback(
-    async (provider: string, code: string) => {
-      const res = await authService.oauthCallback({ provider, code });
-      const session = createSession(res.token, res.user, true);
+  const applyLoginResponse = useCallback(
+    (
+      res: {
+        accessToken: string;
+        refreshToken: string;
+        accessExpiresIn: number;
+        user: import("@/lib/api/contracts").BackendUser;
+      },
+      rememberMe: boolean
+    ) => {
+      const user = mapBackendUser(res.user);
+      const session = createSession(res.accessToken, user, rememberMe, {
+        refreshToken: res.refreshToken,
+        expiresInSeconds: res.accessExpiresIn,
+      });
       saveSession(session);
-      setState({ user: res.user, isLoading: false, isAuthenticated: true });
+      setState({ user, isLoading: false, isAuthenticated: true });
     },
     []
   );
 
+  const login = useCallback(
+    async (req: PasswordLoginInput) => {
+      const res = await authService.loginByPassword({
+        username: req.username,
+        password: req.password,
+      });
+      applyLoginResponse(res, req.rememberMe);
+    },
+    [applyLoginResponse]
+  );
+
+  const loginBySms = useCallback(
+    async (req: SmsLoginRequest) => {
+      const res = await authService.loginBySms({
+        phone: req.phone,
+        code: req.code,
+      });
+      applyLoginResponse(res, req.rememberMe);
+    },
+    [applyLoginResponse]
+  );
+
+  const oauthLogin = useCallback(async (provider: string, code: string) => {
+    const res = await authService.oauthCallback({ provider, code });
+    const session = createSession(res.token, res.user, true);
+    saveSession(session);
+    setState({ user: res.user, isLoading: false, isAuthenticated: true });
+  }, []);
+
   const logout = useCallback(async () => {
+    const session = loadSession();
     try {
-      await authService.logout();
+      if (session?.refreshToken) {
+        await authService.logoutReal(session.refreshToken);
+      }
+    } catch {
+      // 吞掉失败，本地仍需清理
     } finally {
       clearSession();
       setState({ user: null, isLoading: false, isAuthenticated: false });

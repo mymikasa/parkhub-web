@@ -8,7 +8,8 @@ export interface User {
 }
 
 export interface Session {
-  token: string;
+  accessToken: string;
+  refreshToken?: string;
   user: User;
   expiresAt: number;
   rememberMe: boolean;
