@@ -3,7 +3,7 @@ import type { RequestHandler } from "msw";
 import { authHandlers } from "./handlers/auth";
 import { parkingLotHandlers, laneHandlers } from "./handlers/parking-lots";
 import { recordHandlers } from "./handlers/records";
-import { deviceHandlers } from "./handlers/devices";
+
 import { tenantHandlers } from "./handlers/tenants";
 import { billingHandlers } from "./handlers/billing";
 import { monitorHandlers } from "./handlers/monitor";
@@ -14,7 +14,7 @@ const MODULE_HANDLERS: Record<string, RequestHandler[]> = {
   auth: authHandlers,
   "parking-lots": parkingLotHandlers,
   records: recordHandlers,
-  devices: deviceHandlers,
+
   tenants: tenantHandlers,
   billing: billingHandlers,
   monitor: monitorHandlers,
