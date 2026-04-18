@@ -35,10 +35,15 @@ export function RemoteControlModal({ open, onClose, device, onCommand }: RemoteC
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
             </svg>
           </div>
-          <p className="text-sm font-mono font-medium text-gray-900">{device.serialNumber}</p>
+          <p className="text-sm font-mono font-medium text-gray-900">{device.id}</p>
           <p className="text-xs text-gray-500 mt-0.5">
-            {device.parkingLotName} · {device.laneName}
+            {device.name || "-"}
           </p>
+          {device.parkingLotId && (
+            <p className="text-xs text-gray-400 mt-0.5">
+              {device.parkingLotId}{device.gateId ? ` / ${device.gateId}` : ""}
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -49,7 +54,7 @@ export function RemoteControlModal({ open, onClose, device, onCommand }: RemoteC
               "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
               executing === "up"
                 ? "border-brand-500 bg-brand-50"
-                : "border-gray-200 hover:border-brand-300 hover:bg-brand-50/50"
+                : "border-gray-200 hover:border-brand-300 hover:bg-brand-50/50",
             )}
           >
             <svg className="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +72,7 @@ export function RemoteControlModal({ open, onClose, device, onCommand }: RemoteC
               "flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all",
               executing === "down"
                 ? "border-brand-500 bg-brand-50"
-                : "border-gray-200 hover:border-brand-300 hover:bg-brand-50/50"
+                : "border-gray-200 hover:border-brand-300 hover:bg-brand-50/50",
             )}
           >
             <svg className="w-8 h-8 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

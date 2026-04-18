@@ -51,7 +51,10 @@ export default function TenantManagementPage() {
       });
       setTenants(res.data);
       setTotal(res.total);
-    } catch {
+    } catch (e) {
+      console.error("tenantService.list failed:", e);
+      setTenants([]);
+      setTotal(0);
       setError(true);
     } finally {
       setLoading(false);
@@ -190,7 +193,7 @@ export default function TenantManagementPage() {
 
       {loading && !tenants.length ? (
         <LoadingSkeleton variant="table" count={5} />
-      ) : error ? (
+      ) : error && tenants.length > 0 ? (
         <ErrorState onRetry={handleRefresh} />
       ) : (
         <div className="bg-white rounded-xl border border-surface-border overflow-hidden">

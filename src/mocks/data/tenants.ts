@@ -1,4 +1,4 @@
-import type { Tenant, TenantSummary, ParkingLot } from "@/types";
+import type { Tenant, TenantSummary } from "@/types";
 import { mockParkingLots } from "./parking-lots";
 
 export const tenantParkingLotMap: Record<string, string[]> = {
@@ -295,7 +295,7 @@ export function getTenantSummary(): TenantSummary {
   };
 }
 
-export function getParkingLotsByTenantId(tenantId: string): ParkingLot[] {
+export function getParkingLotsByTenantId(tenantId: string) {
   const lotIds = tenantParkingLotMap[tenantId] ?? [];
   return mockParkingLots.filter((lot) => lotIds.includes(lot.id));
 }

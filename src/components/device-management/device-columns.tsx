@@ -10,6 +10,13 @@ const typeLabels: Record<string, string> = {
   barrier_only: "仅道闸",
 };
 
+const statusConfig: Record<string, { label: string; bg: string; text: string; dot: string }> = {
+  pending: { label: "待激活", bg: "bg-gray-50", text: "text-gray-700", dot: "bg-gray-400" },
+  active: { label: "在线", bg: "bg-emerald-50", text: "text-emerald-700", dot: "bg-emerald-500 animate-pulse" },
+  offline: { label: "离线", bg: "bg-red-50", text: "text-red-700", dot: "bg-red-500" },
+  disabled: { label: "已停用", bg: "bg-orange-50", text: "text-orange-700", dot: "bg-orange-500" },
+};
+
 function formatHeartbeat(heartbeat: string | null): string {
   if (!heartbeat) return "-";
   const d = new Date(heartbeat);
@@ -24,11 +31,17 @@ function formatHeartbeat(heartbeat: string | null): string {
 }
 
 export function getDeviceColumns(opts: {
+  onEdit: (device: Device) => void;
+  onBind: (device: Device) => void;
+  onUnbind: (device: Device) => void;
+  onDisable: (device: Device) => void;
+  onEnable: (device: Device) => void;
+  onDelete: (device: Device) => void;
   onRemoteControl: (device: Device) => void;
 }): ColumnDef<Device, unknown>[] {
   return [
     {
-      accessorKey: "serialNumber",
+      accessorKey: "id",
       header: "设备信息",
       cell: ({ row }) => {
         const d = row.original;
@@ -40,45 +53,53 @@ export function getDeviceColumns(opts: {
               </svg>
             </div>
             <div>
-              <div className="text-sm font-mono font-medium text-gray-900">{d.serialNumber}</div>
-              <div className="text-xs text-gray-500">{typeLabels[d.type] ?? d.type}</div>
+              <div className="text-sm font-mono font-medium text-gray-900">{d.id}</div>
+              <div className="text-xs text-gray-500">
+                {d.name || "-"} · {typeLabels[d.type] ?? d.type}
+              </div>
             </div>
           </div>
         );
       },
     },
     {
-      accessorKey: "parkingLotName",
-      header: "所属车场/出入口",
-      cell: ({ row }) => (
-        <div>
-          <div className="text-sm text-gray-900">{row.original.parkingLotName}</div>
-          <div className="text-xs text-gray-500">
-            {row.original.laneName} · {row.original.laneType === "entry" ? "入口" : "出口"}
+      id: "binding",
+      header: "绑定信息",
+      cell: ({ row }) => {
+        const d = row.original;
+        if (!d.parkingLotId) {
+          return <span className="text-xs text-gray-400">未绑定</span>;
+        }
+        return (
+          <div>
+            <div className="text-sm text-gray-900">车场: {d.parkingLotId}</div>
+            {d.gateId && <div className="text-xs text-gray-500">道闸: {d.gateId}</div>}
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       accessorKey: "status",
       header: "状态",
       cell: ({ row }) => {
-        const isOnline = row.original.status === "online";
+        const cfg = statusConfig[row.original.status] ?? statusConfig.pending;
         return (
           <span className={cn(
             "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium border",
-            isOnline
-              ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-              : "bg-red-50 text-red-700 border-red-200"
+            cfg.bg, cfg.text,
           )}>
-            <span className={cn(
-              "w-1.5 h-1.5 rounded-full",
-              isOnline ? "bg-emerald-500 animate-pulse" : "bg-red-500"
-            )} />
-            {isOnline ? "在线" : "离线"}
+            <span className={cn("w-1.5 h-1.5 rounded-full", cfg.dot)} />
+            {cfg.label}
           </span>
         );
       },
+    },
+    {
+      accessorKey: "firmwareVersion",
+      header: "固件版本",
+      cell: ({ row }) => (
+        <span className="text-sm text-gray-600">{row.original.firmwareVersion || "-"}</span>
+      ),
     },
     {
       accessorKey: "lastHeartbeat",
@@ -90,32 +111,40 @@ export function getDeviceColumns(opts: {
       ),
     },
     {
-      accessorKey: "todayTraffic",
-      header: "今日通行",
-      cell: ({ row }) => (
-        <span className="text-sm font-medium text-gray-900">
-          {row.original.todayTraffic ?? 0}
-        </span>
-      ),
-    },
-    {
       id: "actions",
       header: "操作",
       cell: ({ row }) => {
-        const device = row.original;
+        const d = row.original;
         return (
-          <button
-            onClick={() => opts.onRemoteControl(device)}
-            disabled={device.status === "offline"}
-            className={cn(
-              "text-xs font-medium",
-              device.status === "offline"
-                ? "text-gray-400 cursor-not-allowed"
-                : "text-brand-600 hover:text-brand-700"
+          <div className="flex items-center gap-2">
+            <button onClick={() => opts.onEdit(d)} className="text-xs font-medium text-brand-600 hover:text-brand-700">
+              编辑
+            </button>
+            {d.status === "pending" && (
+              <>
+                <button onClick={() => opts.onBind(d)} className="text-xs font-medium text-blue-600 hover:text-blue-700">绑定</button>
+                <button onClick={() => opts.onDisable(d)} className="text-xs font-medium text-orange-600 hover:text-orange-700">停用</button>
+                <button onClick={() => opts.onDelete(d)} className="text-xs font-medium text-red-600 hover:text-red-700">删除</button>
+              </>
             )}
-          >
-            远程控制
-          </button>
+            {d.status === "active" && (
+              <>
+                <button onClick={() => opts.onUnbind(d)} className="text-xs font-medium text-gray-600 hover:text-gray-700">解绑</button>
+                <button onClick={() => opts.onDisable(d)} className="text-xs font-medium text-orange-600 hover:text-orange-700">停用</button>
+                <button onClick={() => opts.onRemoteControl(d)} className="text-xs font-medium text-brand-600 hover:text-brand-700">远程控制</button>
+              </>
+            )}
+            {d.status === "offline" && (
+              <>
+                <button onClick={() => opts.onUnbind(d)} className="text-xs font-medium text-gray-600 hover:text-gray-700">解绑</button>
+                <button onClick={() => opts.onDisable(d)} className="text-xs font-medium text-orange-600 hover:text-orange-700">停用</button>
+                <button onClick={() => opts.onDelete(d)} className="text-xs font-medium text-red-600 hover:text-red-700">删除</button>
+              </>
+            )}
+            {d.status === "disabled" && (
+              <button onClick={() => opts.onEnable(d)} className="text-xs font-medium text-emerald-600 hover:text-emerald-700">启用</button>
+            )}
+          </div>
         );
       },
     },

@@ -1,7 +1,7 @@
 import { setupWorker } from "msw/browser";
 import type { RequestHandler } from "msw";
 import { authHandlers } from "./handlers/auth";
-import { parkingLotHandlers } from "./handlers/parking-lots";
+import { parkingLotHandlers, laneHandlers } from "./handlers/parking-lots";
 import { recordHandlers } from "./handlers/records";
 import { deviceHandlers } from "./handlers/devices";
 import { tenantHandlers } from "./handlers/tenants";
@@ -34,4 +34,4 @@ function resolveEnabledModules(): string[] {
 const enabled = resolveEnabledModules();
 const handlers = enabled.flatMap((m) => MODULE_HANDLERS[m] ?? []);
 
-export const worker = setupWorker(...handlers);
+export const worker = setupWorker(...handlers, ...laneHandlers);

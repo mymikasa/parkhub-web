@@ -5,6 +5,8 @@ import { render, screen, fireEvent, act } from "@testing-library/react";
 vi.mock("@tanstack/react-table", () => {
   return {
     useReactTable: vi.fn(({ data, columns }) => ({
+      getIsAllRowsSelected: () => false,
+      getToggleAllRowsSelectedHandler: () => () => {},
       getHeaderGroups: () => [
         {
           id: "header-0",
@@ -21,6 +23,8 @@ vi.mock("@tanstack/react-table", () => {
         rows: data.map((item: Record<string, unknown>, i: number) => ({
           id: `row_${i}`,
           original: item,
+          getIsSelected: () => false,
+          getToggleSelectedHandler: () => () => {},
           getVisibleCells: () =>
             columns.map((col: Record<string, unknown>, j: number) => ({
               id: `cell_${i}_${j}`,

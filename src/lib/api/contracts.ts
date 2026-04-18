@@ -114,16 +114,29 @@ export const exceptionHandleSchema = z.object({
 
 export type ExceptionHandleFormData = z.infer<typeof exceptionHandleSchema>;
 
-export const registerDeviceSchema = z.object({
-  serialNumber: z.string().min(1, "请输入设备序列号"),
-  parkingLotId: z.string().min(1, "请选择停车场"),
-  laneId: z.string().min(1, "请选择出入口"),
+export const createDeviceSchema = z.object({
+  id: z.string().min(1, "请输入设备ID"),
+  name: z.string().optional(),
   type: z.enum(["integrated", "camera_only", "barrier_only"], {
     required_error: "请选择设备类型",
   }),
+  firmwareVersion: z.string().optional(),
 });
 
-export type RegisterDeviceFormData = z.infer<typeof registerDeviceSchema>;
+export type CreateDeviceFormData = z.infer<typeof createDeviceSchema>;
+
+export const updateDeviceNameSchema = z.object({
+  name: z.string().min(1, "请输入设备名称"),
+});
+
+export type UpdateDeviceNameFormData = z.infer<typeof updateDeviceNameSchema>;
+
+export const bindDeviceSchema = z.object({
+  parkingLotId: z.string().min(1, "请选择停车场"),
+  gateId: z.string().min(1, "请选择道闸"),
+});
+
+export type BindDeviceFormData = z.infer<typeof bindDeviceSchema>;
 
 export const createTenantSchema = z.object({
   companyName: z.string().min(1, "请输入公司名称"),
