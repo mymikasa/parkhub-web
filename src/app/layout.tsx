@@ -2,6 +2,8 @@ import { Metadata } from "next";
 import "./globals.css";
 import { MswProvider } from "@/components/layout/msw-provider";
 import { AuthProvider } from "@/contexts/auth-context";
+import { QueryProvider } from "@/components/layout/query-provider";
+import { ApiClientInitializer } from "@/components/layout/api-client-initializer";
 
 export const metadata: Metadata = {
   title: "ParkHub · 智慧停车管理平台",
@@ -29,7 +31,12 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col">
         <MswProvider>
-          <AuthProvider>{children}</AuthProvider>
+          <QueryProvider>
+            <AuthProvider>
+              <ApiClientInitializer />
+              {children}
+            </AuthProvider>
+          </QueryProvider>
         </MswProvider>
       </body>
     </html>
