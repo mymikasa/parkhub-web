@@ -1,112 +1,107 @@
-import type {
-  ParkingLot,
-  ParkingLotSummary,
-  Lane,
-  LaneDevice,
-  DeviceOption,
-  LaneConfigResponse,
-} from "@/types";
+export interface BackendParkingLot {
+  id: string;
+  tenant_id: string;
+  name: string;
+  address: string;
+  total_spaces: number;
+  available_spaces: number;
+  lot_type: string;
+  status: string;
+  created_at: { seconds: string; nanos: number };
+  updated_at: { seconds: string; nanos: number };
+}
 
-export const mockParkingLots: ParkingLot[] = [
+export const mockParkingLots: BackendParkingLot[] = [
   {
     id: "lot_001",
+    tenant_id: "tenant_001",
     name: "万科翡翠滨江地下停车场",
     address: "上海市浦东新区陆家嘴环路1000号",
-    type: "underground",
-    status: "operating",
-    totalSpots: 800,
-    availableSpots: 156,
-    occupiedSpots: 644,
-    usageRate: 80.5,
-    entryCount: 3,
-    exitCount: 3,
-    laneCount: 6,
-    createdAt: "2024-01-15T08:00:00Z",
-    updatedAt: "2024-12-20T14:30:00Z",
+    total_spaces: 800,
+    available_spaces: 156,
+    lot_type: "LOT_TYPE_UNDERGROUND",
+    status: "PARKING_LOT_STATUS_ACTIVE",
+    created_at: { seconds: "1705305600", nanos: 0 },
+    updated_at: { seconds: "1734703800", nanos: 0 },
   },
   {
     id: "lot_002",
+    tenant_id: "tenant_001",
     name: "万科广场商业停车场",
     address: "上海市闵行区七莘路3655号",
-    type: "ground",
-    status: "operating",
-    totalSpots: 1200,
-    availableSpots: 89,
-    occupiedSpots: 1111,
-    usageRate: 92.6,
-    entryCount: 4,
-    exitCount: 4,
-    laneCount: 8,
-    createdAt: "2024-02-20T10:00:00Z",
-    updatedAt: "2024-12-19T16:45:00Z",
+    total_spaces: 1200,
+    available_spaces: 89,
+    lot_type: "LOT_TYPE_GROUND",
+    status: "PARKING_LOT_STATUS_ACTIVE",
+    created_at: { seconds: "1708384800", nanos: 0 },
+    updated_at: { seconds: "1734620700", nanos: 0 },
   },
   {
     id: "lot_003",
+    tenant_id: "tenant_002",
     name: "万科城市花园停车场",
     address: "上海市宝山区共康路555号",
-    type: "ground",
-    status: "operating",
-    totalSpots: 450,
-    availableSpots: 203,
-    occupiedSpots: 247,
-    usageRate: 54.9,
-    entryCount: 2,
-    exitCount: 2,
-    laneCount: 4,
-    createdAt: "2024-03-10T09:00:00Z",
-    updatedAt: "2024-12-18T11:20:00Z",
+    total_spaces: 450,
+    available_spaces: 203,
+    lot_type: "LOT_TYPE_GROUND",
+    status: "PARKING_LOT_STATUS_ACTIVE",
+    created_at: { seconds: "1710032400", nanos: 0 },
+    updated_at: { seconds: "1734505200", nanos: 0 },
   },
   {
     id: "lot_004",
+    tenant_id: "tenant_002",
     name: "万科翡翠别墅区停车场",
     address: "上海市松江区泗泾镇古楼路888号",
-    type: "underground",
-    status: "suspended",
-    totalSpots: 320,
-    availableSpots: 320,
-    occupiedSpots: 0,
-    usageRate: 0,
-    entryCount: 1,
-    exitCount: 1,
-    laneCount: 2,
-    createdAt: "2024-04-05T08:00:00Z",
-    updatedAt: "2024-12-15T09:00:00Z",
+    total_spaces: 320,
+    available_spaces: 320,
+    lot_type: "LOT_TYPE_UNDERGROUND",
+    status: "PARKING_LOT_STATUS_INACTIVE",
+    created_at: { seconds: "1712284800", nanos: 0 },
+    updated_at: { seconds: "1734243600", nanos: 0 },
   },
   {
     id: "lot_005",
+    tenant_id: "tenant_003",
     name: "万科星城立体车库",
     address: "上海市嘉定区南翔镇银翔路66号",
-    type: "mechanical",
-    status: "operating",
-    totalSpots: 500,
-    availableSpots: 210,
-    occupiedSpots: 290,
-    usageRate: 58.0,
-    entryCount: 2,
-    exitCount: 2,
-    laneCount: 4,
-    createdAt: "2024-05-20T10:00:00Z",
-    updatedAt: "2024-12-21T08:15:00Z",
+    total_spaces: 500,
+    available_spaces: 210,
+    lot_type: "LOT_TYPE_STEREO",
+    status: "PARKING_LOT_STATUS_ACTIVE",
+    created_at: { seconds: "1716160800", nanos: 0 },
+    updated_at: { seconds: "1734760500", nanos: 0 },
   },
   {
     id: "lot_006",
+    tenant_id: "tenant_003",
     name: "万科金域华府停车场",
     address: "上海市青浦区盈港东路168号",
-    type: "underground",
-    status: "operating",
-    totalSpots: 680,
-    availableSpots: 102,
-    occupiedSpots: 578,
-    usageRate: 85.0,
-    entryCount: 3,
-    exitCount: 2,
-    laneCount: 5,
-    createdAt: "2024-06-01T08:00:00Z",
-    updatedAt: "2024-12-20T17:00:00Z",
+    total_spaces: 680,
+    available_spaces: 102,
+    lot_type: "LOT_TYPE_UNDERGROUND",
+    status: "PARKING_LOT_STATUS_ACTIVE",
+    created_at: { seconds: "1717200000", nanos: 0 },
+    updated_at: { seconds: "1734716400", nanos: 0 },
   },
 ];
 
-export const mockLaneDevices: LaneDevice[] = [
+export interface MockLaneDevice {
+  id: string;
+  name: string;
+  status: "online" | "offline";
+  lastHeartbeat: string;
+}
+
+export interface MockLane {
+  id: string;
+  parkingLotId: string;
+  name: string;
+  type: "entry" | "exit";
+  device?: MockLaneDevice;
+}
+
+export const mockLaneDevices: MockLaneDevice[] = [
   { id: "dev_001", name: "PH-DEV-2024-001", status: "online", lastHeartbeat: "2024-12-21T10:00:00Z" },
   { id: "dev_002", name: "PH-DEV-2024-002", status: "online", lastHeartbeat: "2024-12-21T10:00:00Z" },
   { id: "dev_003", name: "PH-DEV-2024-003", status: "online", lastHeartbeat: "2024-12-21T10:00:00Z" },
@@ -124,7 +119,7 @@ export const mockLaneDevices: LaneDevice[] = [
   { id: "dev_015", name: "PH-DEV-2024-015", status: "online", lastHeartbeat: "2024-12-21T10:00:00Z" },
 ];
 
-export const mockLanes: Lane[] = [
+export const mockLanes: MockLane[] = [
   { id: "lane_001", parkingLotId: "lot_001", name: "1号入口", type: "entry", device: mockLaneDevices[0] },
   { id: "lane_002", parkingLotId: "lot_001", name: "2号入口", type: "entry", device: mockLaneDevices[1] },
   { id: "lane_003", parkingLotId: "lot_001", name: "3号入口", type: "entry", device: mockLaneDevices[2] },
@@ -161,26 +156,34 @@ export const mockLanes: Lane[] = [
   { id: "lane_029", parkingLotId: "lot_006", name: "2号出口", type: "exit", device: mockLaneDevices[14] },
 ];
 
-export function getParkingLotById(id: string): ParkingLot | undefined {
+export function getParkingLotById(id: string): BackendParkingLot | undefined {
   return mockParkingLots.find((lot) => lot.id === id);
 }
 
-export function getParkingLotSummary(): ParkingLotSummary {
-  const active = mockParkingLots.filter((lot) => lot.status === "operating");
+export function getParkingLotStats() {
+  const active = mockParkingLots.filter(
+    (lot) => lot.status === "PARKING_LOT_STATUS_ACTIVE"
+  );
+  const totalSpaces = mockParkingLots.reduce((s, l) => s + l.total_spaces, 0);
+  const availableSpaces = active.reduce((s, l) => s + l.available_spaces, 0);
+  const occupiedVehicles = active.reduce(
+    (s, l) => s + (l.total_spaces - l.available_spaces),
+    0
+  );
   return {
-    totalSpots: mockParkingLots.reduce((sum, lot) => sum + lot.totalSpots, 0),
-    availableSpots: active.reduce((sum, lot) => sum + lot.availableSpots, 0),
-    occupiedSpots: active.reduce((sum, lot) => sum + lot.occupiedSpots, 0),
-    laneCount: mockLanes.length,
+    total_spaces: totalSpaces,
+    available_spaces: availableSpaces,
+    occupied_vehicles: occupiedVehicles,
+    total_gates: mockLanes.length,
   };
 }
 
-export function getLaneConfigByParkingLotId(lotId: string): LaneConfigResponse {
+export function getLaneConfigByParkingLotId(lotId: string) {
   const lanes = mockLanes.filter((lane) => lane.parkingLotId === lotId);
   const boundDeviceIds = new Set(
     lanes.map((lane) => lane.device?.id).filter(Boolean) as string[]
   );
-  const availableDevices: DeviceOption[] = mockLaneDevices
+  const availableDevices = mockLaneDevices
     .filter((dev) => !boundDeviceIds.has(dev.id))
     .map((dev) => ({
       id: dev.id,

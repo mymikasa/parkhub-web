@@ -1,12 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/constants";
-import { loginSchema, type LoginFormData } from "@/lib/api/contracts";
+import { loginSchema } from "@/lib/api/contracts";
 import { ApiClientError } from "@/lib/api/client";
 
 export function AccountForm() {
@@ -15,39 +14,42 @@ export function AccountForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [serverError, setServerError] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isSubmitting },
-  } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm({
     defaultValues: {
       username: "",
       password: "",
-      rememberMe: true,
+      rememberMe: true as boolean,
+    },
+    validators: {
+      onChange: loginSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setServerError("");
+      try {
+        await login({
+          username: value.username,
+          password: value.password,
+          rememberMe: value.rememberMe,
+        });
+        router.push(ROUTES.DASHBOARD_HOME);
+      } catch (err) {
+        if (err instanceof ApiClientError) {
+          setServerError(err.message);
+        } else {
+          setServerError("登录失败，请稍后重试");
+        }
+      }
     },
   });
 
-  const onSubmit = async (data: LoginFormData) => {
-    setServerError("");
-    try {
-      await login({
-        username: data.username,
-        password: data.password,
-        rememberMe: data.rememberMe,
-      });
-      router.push(ROUTES.DASHBOARD_HOME);
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setServerError(err.message);
-      } else {
-        setServerError("登录失败，请稍后重试");
-      }
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+      className="space-y-5"
+    >
       <div>
         <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-1.5">
           账号
@@ -58,19 +60,29 @@ export function AccountForm() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
           </div>
-          <input
-            id="username"
-            type="text"
-            autoComplete="username"
-            placeholder="请输入账号…"
-            spellCheck={false}
-            {...register("username")}
-            className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
-          />
+          <form.Field name="username">
+            {(field) => (
+              <input
+                id="username"
+                type="text"
+                autoComplete="username"
+                placeholder="请输入账号…"
+                spellCheck={false}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+              />
+            )}
+          </form.Field>
         </div>
-        {errors.username && (
-          <p className="mt-1 text-xs text-red-500">{errors.username.message}</p>
-        )}
+        <form.Field name="username">
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
+        </form.Field>
       </div>
 
       <div>
@@ -83,14 +95,20 @@ export function AccountForm() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            autoComplete="current-password"
-            placeholder="请输入密码…"
-            {...register("password")}
-            className="w-full h-11 pl-10 pr-11 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
-          />
+          <form.Field name="password">
+            {(field) => (
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                placeholder="请输入密码…"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="w-full h-11 pl-10 pr-11 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+              />
+            )}
+          </form.Field>
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
@@ -109,18 +127,27 @@ export function AccountForm() {
             )}
           </button>
         </div>
-        {errors.password && (
-          <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
-        )}
+        <form.Field name="password">
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
+        </form.Field>
       </div>
 
       <div className="flex items-center justify-between">
         <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            {...register("rememberMe")}
-            className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
-          />
+          <form.Field name="rememberMe">
+            {(field) => (
+              <input
+                type="checkbox"
+                checked={field.state.value}
+                onChange={(e) => field.handleChange(e.target.checked)}
+                className="w-4 h-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500 focus:ring-offset-0 cursor-pointer"
+              />
+            )}
+          </form.Field>
           <span className="text-sm text-gray-600">记住登录状态</span>
         </label>
         <a href="#" className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors">
@@ -136,15 +163,15 @@ export function AccountForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={form.state.isSubmitting}
         className="w-full h-11 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
         style={{
-          background: isSubmitting
+          background: form.state.isSubmitting
             ? "#2563eb"
             : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
         }}
       >
-        {isSubmitting ? (
+        {form.state.isSubmitting ? (
           <>
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
