@@ -1,12 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { Modal } from "@/components/shared/modal";
 import { createParkingLotSchema } from "@/lib/api/contracts";
 import { parkingLotService } from "@/lib/api/parking-lots";
-import type { CreateParkingLotFormData } from "@/lib/api/contracts";
 
 interface CreateParkingLotModalProps {
   open: boolean;
@@ -22,34 +20,30 @@ export function CreateParkingLotModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateParkingLotFormData>({
-    resolver: zodResolver(createParkingLotSchema),
-    defaultValues: { name: "", address: "", totalSpots: 0 },
+  const form = useForm({
+    defaultValues: { name: "", address: "", totalSpots: 0 as number, type: "ground" as string },
+    validators: {
+      onChange: createParkingLotSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      setSubmitting(true);
+      setError("");
+      try {
+        await parkingLotService.create(value as any);
+        onSuccess();
+        handleClose();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "创建失败");
+      } finally {
+        setSubmitting(false);
+      }
+    },
   });
 
   const handleClose = () => {
-    reset();
+    form.reset();
     setError("");
     onClose();
-  };
-
-  const onSubmit = async (data: CreateParkingLotFormData) => {
-    setSubmitting(true);
-    setError("");
-    try {
-      await parkingLotService.create(data);
-      onSuccess();
-      handleClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "创建失败");
-    } finally {
-      setSubmitting(false);
-    }
   };
 
   return (
@@ -66,7 +60,7 @@ export function CreateParkingLotModal({
             取消
           </button>
           <button
-            onClick={handleSubmit(onSubmit)}
+            onClick={() => form.handleSubmit()}
             disabled={submitting}
             className="h-10 px-5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-medium hover:from-brand-700 hover:to-brand-800 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-all"
           >
@@ -89,59 +83,84 @@ export function CreateParkingLotModal({
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             车场名称 <span className="text-red-500">*</span>
           </label>
-          <input
-            {...register("name")}
-            placeholder="如：万科翡翠滨江地下停车场"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
-          />
-          {errors.name && (
-            <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>
-          )}
+          <form.Field name="name">
+            {(field) => (
+              <>
+                <input
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="如：万科翡翠滨江地下停车场"
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                )}
+              </>
+            )}
+          </form.Field>
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             车场地址 <span className="text-red-500">*</span>
           </label>
-          <input
-            {...register("address")}
-            placeholder="省/市/区/街道/门牌号"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
-          />
-          {errors.address && (
-            <p className="text-red-500 text-xs mt-1">
-              {errors.address.message}
-            </p>
-          )}
+          <form.Field name="address">
+            {(field) => (
+              <>
+                <input
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="省/市/区/街道/门牌号"
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                )}
+              </>
+            )}
+          </form.Field>
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               总车位数 <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
-              {...register("totalSpots")}
-              placeholder="0"
-              className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
-            />
-            {errors.totalSpots && (
-              <p className="text-red-500 text-xs mt-1">
-                {errors.totalSpots.message}
-              </p>
-            )}
+            <form.Field name="totalSpots">
+              {(field) => (
+                <>
+                  <input
+                    type="number"
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(Number(e.target.value))}
+                    onBlur={field.handleBlur}
+                    placeholder="0"
+                    className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                  )}
+                </>
+              )}
+            </form.Field>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               车场类型
             </label>
-            <select
-              {...register("type")}
-              className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 bg-white transition-colors"
-            >
-              <option value="underground">地下停车场</option>
-              <option value="ground">地面停车场</option>
-              <option value="mechanical">立体车库</option>
-            </select>
+            <form.Field name="type">
+              {(field) => (
+                <select
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 bg-white transition-colors"
+                >
+                  <option value="underground">地下停车场</option>
+                  <option value="ground">地面停车场</option>
+                  <option value="mechanical">立体车库</option>
+                </select>
+              )}
+            </form.Field>
           </div>
         </div>
       </div>
