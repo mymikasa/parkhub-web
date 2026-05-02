@@ -1,75 +1,73 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
+import { type RowSelectionState } from "@tanstack/react-table";
 import { PageHeader } from "@/components/shared/page-header";
 import { StatCard } from "@/components/shared/stat-card";
 import { DataTable } from "@/components/shared/data-table";
 import { SearchInput } from "@/components/shared/search-input";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
-import { OfflineAlert } from "@/components/device-management/offline-alert";
-import { RegisterDeviceModal } from "@/components/device-management/register-device-modal";
+import { DeviceAlert } from "@/components/device-management/offline-alert";
+import { CreateDeviceModal } from "@/components/device-management/create-device-modal";
+import { UpdateDeviceNameModal } from "@/components/device-management/update-device-name-modal";
+import { BindDeviceModal } from "@/components/device-management/bind-device-modal";
+import { DeleteConfirmModal } from "@/components/device-management/delete-confirm-modal";
 import { RemoteControlModal } from "@/components/device-management/remote-control-modal";
+import { BatchActionBar } from "@/components/device-management/batch-action-bar";
 import { getDeviceColumns } from "@/components/device-management/device-columns";
-import { deviceService } from "@/lib/api/devices";
-import { parkingLotService } from "@/lib/api/parking-lots";
+import { useDevices, useDeviceStats, useCreateDevice, useUpdateDeviceName, useDeleteDevice, useBindDevice, useUnbindDevice, useDisableDevice, useEnableDevice, useBatchDisableDevices, useBatchEnableDevices, useBatchDeleteDevices, useBatchBindDevices, useSendDeviceCommand } from "@/hooks/use-devices";
+import { useParkingLots } from "@/hooks/use-parking-lots";
 import { cn } from "@/lib/utils";
-import type { Device, DeviceSummary, DeviceFilters, DeviceOnlineStatus, DeviceType, ParkingLot } from "@/types";
+import type { Device, DeviceFilters, DeviceStatus } from "@/types";
 
-type StatusTab = "all" | "online" | "offline";
+type StatusTab = "all" | "pending" | "active" | "offline" | "disabled";
+
+const statusTabMap: Record<StatusTab, DeviceStatus | undefined> = {
+  all: undefined,
+  pending: "pending",
+  active: "active",
+  offline: "offline",
+  disabled: "disabled",
+};
 
 export default function DeviceManagementPage() {
   const [filters, setFilters] = useState<DeviceFilters>({ page: 1, pageSize: 10 });
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [total, setTotal] = useState(0);
-  const [summary, setSummary] = useState<DeviceSummary | null>(null);
-  const [parkingLots, setParkingLots] = useState<ParkingLot[]>([]);
-  const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [activeTab, setActiveTab] = useState<StatusTab>("all");
 
-  const [registerOpen, setRegisterOpen] = useState(false);
-  const [registerLoading, setRegisterLoading] = useState(false);
+  const { data: deviceData, isLoading: loading } = useDevices(filters);
+  const { data: stats } = useDeviceStats();
+  const { data: parkingLotsData } = useParkingLots({ pageSize: 100 });
+
+  const devices = deviceData?.data ?? [];
+  const total = deviceData?.total ?? 0;
+  const parkingLots = parkingLotsData?.data ?? [];
+
+  const createDevice = useCreateDevice();
+  const updateDeviceName = useUpdateDeviceName();
+  const deleteDevice = useDeleteDevice();
+  const bindDevice = useBindDevice();
+  const unbindDevice = useUnbindDevice();
+  const disableDevice = useDisableDevice();
+  const enableDevice = useEnableDevice();
+  const batchDisable = useBatchDisableDevices();
+  const batchEnable = useBatchEnableDevices();
+  const batchDelete = useBatchDeleteDevices();
+  const batchBind = useBatchBindDevices();
+  const sendCommand = useSendDeviceCommand();
+
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editDevice, setEditDevice] = useState<Device | null>(null);
+  const [bindDeviceState, setBindDeviceState] = useState<Device | null>(null);
+  const [deleteDeviceState, setDeleteDeviceState] = useState<Device | null>(null);
   const [controlOpen, setControlOpen] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
-
-  const fetchDevices = useCallback(async (f: DeviceFilters) => {
-    setLoading(true);
-    try {
-      const res = await deviceService.list(f);
-      setDevices(res.data);
-      setTotal(res.total);
-    } catch {
-      // error handled silently
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const fetchSummary = useCallback(async () => {
-    try {
-      const res = await deviceService.getSummary();
-      setSummary(res);
-    } catch {
-      // error handled silently
-    }
-  }, []);
-
-  useEffect(() => {
-    parkingLotService.list({ pageSize: 100 }).then((res) => setParkingLots(res.data));
-  }, []);
-
-  useEffect(() => {
-    fetchDevices(filters);
-  }, [filters, fetchDevices]);
-
-  useEffect(() => {
-    fetchSummary();
-  }, [fetchSummary]);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [batchBindOpen, setBatchBindOpen] = useState(false);
 
   const handleTabChange = (tab: StatusTab) => {
     setActiveTab(tab);
-    const status: DeviceOnlineStatus | undefined = tab === "all" ? undefined : tab;
-    setFilters((prev) => ({ ...prev, status, page: 1 }));
+    setFilters((prev) => ({ ...prev, status: statusTabMap[tab], page: 1 }));
   };
 
   const handleParkingLotChange = (lotId: string) => {
@@ -85,18 +83,39 @@ export default function DeviceManagementPage() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleRegister = async (data: { serialNumber: string; parkingLotId: string; laneId: string; type: DeviceType }) => {
-    setRegisterLoading(true);
-    try {
-      await deviceService.register(data);
-      setRegisterOpen(false);
-      fetchDevices(filters);
-      fetchSummary();
-    } catch {
-      // error handled silently
-    } finally {
-      setRegisterLoading(false);
-    }
+  const handleCreate = async (data: { id: string; name?: string; type: string; firmwareVersion?: string }) => {
+    await createDevice.mutateAsync(data as any);
+    setCreateOpen(false);
+  };
+
+  const handleUpdateName = async (name: string) => {
+    if (!editDevice) return;
+    await updateDeviceName.mutateAsync({ id: editDevice.id, data: { name } });
+    setEditDevice(null);
+  };
+
+  const handleBind = async (data: { parkingLotId: string; gateId: string }) => {
+    if (!bindDeviceState) return;
+    await bindDevice.mutateAsync({ id: bindDeviceState.id, data });
+    setBindDeviceState(null);
+  };
+
+  const handleUnbind = async (device: Device) => {
+    await unbindDevice.mutateAsync(device.id);
+  };
+
+  const handleDisable = async (device: Device) => {
+    await disableDevice.mutateAsync(device.id);
+  };
+
+  const handleEnable = async (device: Device) => {
+    await enableDevice.mutateAsync(device.id);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteDeviceState) return;
+    await deleteDevice.mutateAsync(deleteDeviceState.id);
+    setDeleteDeviceState(null);
   };
 
   const handleRemoteControl = (device: Device) => {
@@ -106,20 +125,69 @@ export default function DeviceManagementPage() {
 
   const handleCommand = async (action: "up" | "down") => {
     if (!selectedDevice) return;
-    await deviceService.sendCommand(selectedDevice.id, { action });
+    await sendCommand.mutateAsync({ id: selectedDevice.id, data: { action } });
+  };
+
+  const selectedDevices = useMemo(() => {
+    const ids = Object.keys(rowSelection).filter((k) => rowSelection[k]);
+    return devices.filter((d) => ids.includes(d.id));
+  }, [rowSelection, devices]);
+
+  const clearSelection = useCallback(() => setRowSelection({}), []);
+
+  const handleBatchDisable = async (ids: string[]) => {
+    await batchDisable.mutateAsync({ ids });
+    clearSelection();
+  };
+
+  const handleBatchEnable = async (ids: string[]) => {
+    await batchEnable.mutateAsync({ ids });
+    clearSelection();
+  };
+
+  const handleBatchDelete = async (ids: string[]) => {
+    await batchDelete.mutateAsync({ ids });
+    clearSelection();
+  };
+
+  const handleBatchBindSubmit = async (data: { parkingLotId: string; gateId: string }) => {
+    const pendingSelected = selectedDevices.filter((d) => d.status === "pending");
+    if (pendingSelected.length === 0) return;
+    await batchBind.mutateAsync({
+      bindings: pendingSelected.map((d) => ({
+        id: d.id,
+        parkingLotId: data.parkingLotId,
+        gateId: data.gateId,
+      })),
+    });
+    setBatchBindOpen(false);
+    clearSelection();
   };
 
   const columns = useMemo(
-    () => getDeviceColumns({ onRemoteControl: handleRemoteControl }),
+    () =>
+      getDeviceColumns({
+        onEdit: (d) => setEditDevice(d),
+        onBind: (d) => setBindDeviceState(d),
+        onUnbind: handleUnbind,
+        onDisable: handleDisable,
+        onEnable: handleEnable,
+        onDelete: (d) => setDeleteDeviceState(d),
+        onRemoteControl: handleRemoteControl,
+      }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     []
   );
 
   const tabs: { key: StatusTab; label: string }[] = [
-    { key: "all", label: `全部 (${summary?.total ?? 0})` },
-    { key: "online", label: `在线 (${summary?.online ?? 0})` },
-    { key: "offline", label: `离线 (${summary?.offline ?? 0})` },
+    { key: "all", label: `全部 (${stats?.total ?? 0})` },
+    { key: "pending", label: `待激活 (${stats?.pending ?? 0})` },
+    { key: "active", label: `在线 (${stats?.active ?? 0})` },
+    { key: "offline", label: `离线 (${stats?.offline ?? 0})` },
+    { key: "disabled", label: `已停用 (${stats?.disabled ?? 0})` },
   ];
+
+  const mutationLoading = createDevice.isPending || updateDeviceName.isPending || deleteDevice.isPending || bindDevice.isPending || batchDisable.isPending || batchEnable.isPending || batchDelete.isPending || batchBind.isPending;
 
   return (
     <div className="p-6 space-y-6">
@@ -133,7 +201,7 @@ export default function DeviceManagementPage() {
               onChange={handleSearch}
             />
             <button
-              onClick={() => setRegisterOpen(true)}
+              onClick={() => setCreateOpen(true)}
               className="h-10 px-4 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -145,57 +213,18 @@ export default function DeviceManagementPage() {
         }
       />
 
-      {summary && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            label="设备总数"
-            value={summary.total}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" />
-              </svg>
-            }
-          />
-          <StatCard
-            label="在线设备"
-            value={summary.online}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" />
-              </svg>
-            }
-            iconBgClass="bg-emerald-50"
-            iconTextClass="text-emerald-600"
-            valueColorClass="text-emerald-600"
-          />
-          <StatCard
-            label="离线设备"
-            value={summary.offline}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            }
-            iconBgClass="bg-red-50"
-            iconTextClass="text-red-600"
-            valueColorClass="text-red-600"
-          />
-          <StatCard
-            label="今日通行"
-            value={summary.todayTraffic}
-            icon={
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-            }
-            iconBgClass="bg-blue-50"
-            iconTextClass="text-blue-600"
-          />
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <StatCard label="设备总数" value={stats.total} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z" /></svg>} />
+          <StatCard label="待激活" value={stats.pending} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} iconBgClass="bg-gray-50" iconTextClass="text-gray-600" valueColorClass="text-gray-600" />
+          <StatCard label="在线" value={stats.active} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 13l4 4L19 7" /></svg>} iconBgClass="bg-emerald-50" iconTextClass="text-emerald-600" valueColorClass="text-emerald-600" />
+          <StatCard label="离线" value={stats.offline} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>} iconBgClass="bg-red-50" iconTextClass="text-red-600" valueColorClass="text-red-600" />
+          <StatCard label="已停用" value={stats.disabled} icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>} iconBgClass="bg-orange-50" iconTextClass="text-orange-600" valueColorClass="text-orange-600" />
         </div>
       )}
 
-      {summary && summary.offline > 0 && (
-        <OfflineAlert offlineCount={summary.offline} />
+      {stats && (stats.offline > 0 || stats.disabled > 0) && (
+        <DeviceAlert offlineCount={stats.offline} disabledCount={stats.disabled} />
       )}
 
       <div className="bg-white rounded-xl border border-surface-border">
@@ -207,9 +236,7 @@ export default function DeviceManagementPage() {
                 onClick={() => handleTabChange(tab.key)}
                 className={cn(
                   "px-3 py-1.5 text-sm font-medium rounded-lg transition-colors",
-                  activeTab === tab.key
-                    ? "bg-brand-50 text-brand-700"
-                    : "text-gray-600 hover:bg-gray-100"
+                  activeTab === tab.key ? "bg-brand-50 text-brand-700" : "text-gray-600 hover:bg-gray-100",
                 )}
               >
                 {tab.label}
@@ -235,6 +262,10 @@ export default function DeviceManagementPage() {
             columns={columns}
             data={devices}
             loading={loading}
+            enableRowSelection
+            getRowId={(d: Device) => d.id}
+            rowSelection={rowSelection}
+            onRowSelectionChange={setRowSelection}
             pagination={{
               page: filters.page ?? 1,
               pageSize: filters.pageSize ?? 10,
@@ -247,22 +278,13 @@ export default function DeviceManagementPage() {
         )}
       </div>
 
-      <RegisterDeviceModal
-        open={registerOpen}
-        onClose={() => setRegisterOpen(false)}
-        onSubmit={handleRegister}
-        loading={registerLoading}
-      />
-
-      <RemoteControlModal
-        open={controlOpen}
-        onClose={() => {
-          setControlOpen(false);
-          setSelectedDevice(null);
-        }}
-        device={selectedDevice}
-        onCommand={handleCommand}
-      />
+      <CreateDeviceModal open={createOpen} onClose={() => setCreateOpen(false)} onSubmit={handleCreate} loading={createDevice.isPending} />
+      {editDevice && <UpdateDeviceNameModal open={!!editDevice} onClose={() => setEditDevice(null)} onSubmit={handleUpdateName} deviceName={editDevice.name} loading={updateDeviceName.isPending} />}
+      {bindDeviceState && <BindDeviceModal open={!!bindDeviceState} onClose={() => setBindDeviceState(null)} onSubmit={handleBind} parkingLots={parkingLots} loading={bindDevice.isPending} />}
+      {deleteDeviceState && <DeleteConfirmModal open={!!deleteDeviceState} onClose={() => setDeleteDeviceState(null)} onConfirm={handleDelete} deviceId={deleteDeviceState.id} loading={deleteDevice.isPending} />}
+      <RemoteControlModal open={controlOpen} onClose={() => { setControlOpen(false); setSelectedDevice(null); }} device={selectedDevice} onCommand={handleCommand} />
+      <BatchActionBar selectedDevices={selectedDevices} onBatchDisable={handleBatchDisable} onBatchEnable={handleBatchEnable} onBatchDelete={handleBatchDelete} onBatchBind={() => setBatchBindOpen(true)} onClearSelection={clearSelection} loading={mutationLoading} />
+      <BindDeviceModal open={batchBindOpen} onClose={() => setBatchBindOpen(false)} onSubmit={handleBatchBindSubmit} parkingLots={parkingLots} loading={batchBind.isPending} />
     </div>
   );
 }

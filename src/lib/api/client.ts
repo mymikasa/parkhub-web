@@ -16,7 +16,7 @@ export class ApiClientError extends Error {
   }
 }
 
-const REAL_API_PREFIXES = ["/identity/", "/tenant/", "/api/v1/", "/parking/"];
+const REAL_API_PREFIXES = ["/identity/", "/tenant/", "/api/v1/", "/parking/", "/iot/"];
 
 function isRealApiPath(path: string): boolean {
   return REAL_API_PREFIXES.some((p) => path.startsWith(p));
@@ -56,6 +56,15 @@ function saveUpdatedSession(session: Session, newAccessToken: string, newRefresh
   storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
 }
 
+function clearSession(): void {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  sessionStorage.removeItem(AUTH_STORAGE_KEY);
+  if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
+  }
+}
+
+
 function normalizeError(status: number, body: unknown): ApiClientError {
   const err = (body ?? {}) as Record<string, unknown>;
   return new ApiClientError({
@@ -75,7 +84,7 @@ async function refreshAccessToken(): Promise<boolean> {
     const res = await fetch(resolveUrl("/identity/v1/auth/refresh"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refreshToken: session.refreshToken }),
+      body: JSON.stringify({ refresh_token: session.refreshToken }),
     });
 
     if (!res.ok) return false;
@@ -170,6 +179,7 @@ async function request<T>(
       }
       return ((retryJson as { data?: unknown })?.data ?? retryJson) as T;
     }
+    clearSession();
   }
 
   if (!res.ok) {

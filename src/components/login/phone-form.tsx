@@ -73,7 +73,10 @@ export function PhoneForm() {
 
   return (
     <form
-      onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
       className="space-y-5"
     >
       <div>
@@ -84,12 +87,26 @@ export function PhoneForm() {
           </div>
           <form.Field name="phone">
             {(field) => (
-              <input id="phone" type="tel" autoComplete="tel" inputMode="tel" placeholder="请输入手机号…" value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow" />
+              <input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="请输入手机号…"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+              />
             )}
           </form.Field>
         </div>
         <form.Field name="phone">
-          {(field) => field.state.meta.errors.length > 0 ? <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p> : null}
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
         </form.Field>
       </div>
 
@@ -102,7 +119,18 @@ export function PhoneForm() {
             </div>
             <form.Field name="code">
               {(field) => (
-                <input id="sms-code" type="text" autoComplete="one-time-code" inputMode="numeric" placeholder="请输入验证码…" spellCheck={false} value={field.state.value} onChange={(e) => field.handleChange(e.target.value)} onBlur={field.handleBlur} className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow" />
+                <input
+                  id="sms-code"
+                  type="text"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  placeholder="请输入验证码…"
+                  spellCheck={false}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+                />
               )}
             </form.Field>
           </div>
@@ -111,7 +139,11 @@ export function PhoneForm() {
           </button>
         </div>
         <form.Field name="code">
-          {(field) => field.state.meta.errors.length > 0 ? <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p> : null}
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
         </form.Field>
       </div>
 
@@ -123,11 +155,23 @@ export function PhoneForm() {
         type="submit"
         disabled={form.state.isSubmitting}
         className="w-full h-11 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-8"
-        style={{ background: form.state.isSubmitting ? "#2563eb" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)" }}
+        style={{
+          background: form.state.isSubmitting
+            ? "#2563eb"
+            : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+        }}
       >
         {form.state.isSubmitting ? (
-          <><svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" /></svg>登录中…</>
-        ) : "登录"}
+          <>
+            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            登录中…
+          </>
+        ) : (
+          "登录"
+        )}
       </button>
     </form>
   );
