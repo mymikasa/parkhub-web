@@ -159,46 +159,79 @@ export interface ExceptionHandleRequest {
 // === Device Management ===
 
 export type DeviceType = "integrated" | "camera_only" | "barrier_only";
+export type DeviceStatus = "pending" | "active" | "offline" | "disabled";
 
 export interface Device {
   id: string;
-  serialNumber: string;
+  tenantId: string;
   name: string;
   type: DeviceType;
-  status: DeviceOnlineStatus;
-  parkingLotId: string;
-  parkingLotName: string;
-  laneName: string;
-  laneType: LaneType;
+  status: DeviceStatus;
+  firmwareVersion: string;
   lastHeartbeat: string | null;
-  todayTraffic: number | null;
+  parkingLotId: string | null;
+  gateId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface DeviceSummary {
+export interface DeviceStats {
   total: number;
-  online: number;
+  active: number;
   offline: number;
-  todayTraffic: number;
-  onlineRate: number;
+  pending: number;
+  disabled: number;
 }
 
 export interface DeviceFilters {
   page?: number;
   pageSize?: number;
-  status?: DeviceOnlineStatus;
+  status?: DeviceStatus;
   parkingLotId?: string;
   keyword?: string;
 }
 
-export interface RegisterDeviceRequest {
-  serialNumber: string;
-  parkingLotId: string;
-  laneId: string;
+export interface CreateDeviceRequest {
+  id: string;
+  name?: string;
   type: DeviceType;
+  firmwareVersion?: string;
+}
+
+export interface UpdateDeviceNameRequest {
+  name: string;
+}
+
+export interface BindDeviceRequest {
+  parkingLotId: string;
+  gateId: string;
+}
+
+export interface BatchIdsRequest {
+  ids: string[];
+}
+
+export interface BatchBindItem {
+  id: string;
+  parkingLotId: string;
+  gateId: string;
+}
+
+export interface BatchBindRequest {
+  bindings: BatchBindItem[];
+}
+
+export interface BatchAffectedResponse {
+  affected: number;
 }
 
 export interface DeviceCommandRequest {
   action: "up" | "down";
+}
+
+export interface DeviceCommandResponse {
+  success: boolean;
+  message: string;
 }
 
 // === Tenant Management ===

@@ -3,26 +3,33 @@ import {
   mockParkingLots,
   mockLanes,
   mockLaneDevices,
-  getParkingLotSummary,
+  getParkingLotStats,
   getLaneConfigByParkingLotId,
 } from "../data/parking-lots";
-import type { ParkingLot } from "@/types";
+import type { BackendParkingLot } from "../data/parking-lots";
 
 let lotIdCounter = mockParkingLots.length;
 let laneIdCounter = mockLanes.length;
 
+function nowTimestamp() {
+  const ms = Date.now();
+  return { seconds: String(Math.floor(ms / 1000)), nanos: (ms % 1000) * 1e6 };
+}
+
 export const parkingLotHandlers = [
-  http.get("/api/parking-lots/summary", async () => {
+  http.get("/parking/v1/lots/stats", async () => {
     await delay(300);
-    return HttpResponse.json({ data: getParkingLotSummary() });
+    return HttpResponse.json(getParkingLotStats());
   }),
 
-  http.get("/api/parking-lots", async ({ request }) => {
+  http.get("/parking/v1/lots", async ({ request }) => {
     await delay(300);
     const url = new URL(request.url);
     const page = Number(url.searchParams.get("page")) || 1;
-    const pageSize = Number(url.searchParams.get("pageSize")) || 10;
+    const pageSize = Number(url.searchParams.get("page_size")) || 10;
     const keyword = url.searchParams.get("keyword") || "";
+    const statusFilter = url.searchParams.get("status") || "";
+    const lotTypeFilter = url.searchParams.get("lot_type") || "";
 
     let filtered = mockParkingLots;
     if (keyword) {
@@ -30,95 +37,115 @@ export const parkingLotHandlers = [
         lot.name.toLowerCase().includes(keyword.toLowerCase())
       );
     }
+    if (statusFilter) {
+      filtered = filtered.filter((lot) => lot.status === statusFilter);
+    }
+    if (lotTypeFilter) {
+      filtered = filtered.filter((lot) => lot.lot_type === lotTypeFilter);
+    }
 
     const total = filtered.length;
+    const totalPages = Math.ceil(total / pageSize);
     const start = (page - 1) * pageSize;
-    const data = filtered.slice(start, start + pageSize);
+    const parkingLots = filtered.slice(start, start + pageSize);
 
     return HttpResponse.json({
-      data: { data, total, page, pageSize },
+      parking_lots: parkingLots,
+      pagination: { page, page_size: pageSize, total, total_pages: totalPages },
     });
   }),
 
-  http.post("/api/parking-lots", async ({ request }) => {
+  http.post("/parking/v1/lots", async ({ request }) => {
     await delay(600);
     const body = (await request.json()) as {
       name: string;
       address: string;
-      totalSpots: number;
-      type?: string;
+      total_spaces: number;
+      lot_type?: string;
     };
 
     lotIdCounter++;
-    const newLot: ParkingLot = {
+    const now = nowTimestamp();
+    const newLot: BackendParkingLot = {
       id: `lot_${String(lotIdCounter).padStart(3, "0")}`,
+      tenant_id: "tenant_001",
       name: body.name,
       address: body.address,
-      type: (body.type as ParkingLot["type"]) || "ground",
-      status: "operating",
-      totalSpots: body.totalSpots,
-      availableSpots: body.totalSpots,
-      occupiedSpots: 0,
-      usageRate: 0,
-      entryCount: 0,
-      exitCount: 0,
-      laneCount: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      total_spaces: body.total_spaces,
+      available_spaces: body.total_spaces,
+      lot_type: body.lot_type || "LOT_TYPE_GROUND",
+      status: "PARKING_LOT_STATUS_ACTIVE",
+      created_at: now,
+      updated_at: now,
     };
 
     mockParkingLots.push(newLot);
-    return HttpResponse.json({ data: newLot });
+    return HttpResponse.json({ parking_lot: newLot });
   }),
 
-  http.patch("/api/parking-lots/:id", async ({ params, request }) => {
-    await delay(300);
-    const id = params.id as string;
-    const body = (await request.json()) as Partial<ParkingLot>;
-    const lot = mockParkingLots.find((l) => l.id === id);
-
-    if (!lot) {
-      return HttpResponse.json(
-        { code: "NOT_FOUND", message: "停车场不存在" },
-        { status: 404 }
-      );
-    }
-
-    if (body.name !== undefined) lot.name = body.name;
-    if (body.address !== undefined) lot.address = body.address;
-    if (body.totalSpots !== undefined) {
-      lot.totalSpots = body.totalSpots;
-      lot.availableSpots = body.totalSpots - lot.occupiedSpots;
-      lot.usageRate =
-        lot.totalSpots > 0
-          ? Math.round((lot.occupiedSpots / lot.totalSpots) * 1000) / 10
-          : 0;
-    }
-    if (body.type !== undefined) lot.type = body.type;
-    if (body.status !== undefined) {
-      lot.status = body.status;
-      if (body.status === "suspended") {
-        lot.occupiedSpots = 0;
-        lot.availableSpots = lot.totalSpots;
-        lot.usageRate = 0;
-      }
-    }
-    lot.updatedAt = new Date().toISOString();
-
-    return HttpResponse.json({ data: lot });
-  }),
-
-  http.get("/api/parking-lots/:id/lanes", async ({ params }) => {
+  http.get("/parking/v1/lots/:id", async ({ params }) => {
     await delay(200);
     const id = params.id as string;
     const lot = mockParkingLots.find((l) => l.id === id);
-
     if (!lot) {
       return HttpResponse.json(
-        { code: "NOT_FOUND", message: "停车场不存在" },
+        { error: "NOT_FOUND", message: "停车场不存在" },
         { status: 404 }
       );
     }
+    return HttpResponse.json({ parking_lot: lot });
+  }),
+
+  http.patch("/parking/v1/lots/:id", async ({ params, request }) => {
+    await delay(300);
+    const id = params.id as string;
+    const body = (await request.json()) as Partial<Record<string, unknown>>;
+    const lot = mockParkingLots.find((l) => l.id === id);
+
+    if (!lot) {
+      return HttpResponse.json(
+        { error: "NOT_FOUND", message: "停车场不存在" },
+        { status: 404 }
+      );
+    }
+
+    if (body.name !== undefined) lot.name = String(body.name);
+    if (body.address !== undefined) lot.address = String(body.address);
+    if (body.total_spaces !== undefined) {
+      lot.total_spaces = Number(body.total_spaces);
+      lot.available_spaces = lot.total_spaces - (lot.total_spaces - lot.available_spaces);
+    }
+    if (body.lot_type !== undefined) lot.lot_type = String(body.lot_type);
+    if (body.status !== undefined) {
+      lot.status = String(body.status);
+      if (body.status === "PARKING_LOT_STATUS_INACTIVE") {
+        lot.available_spaces = lot.total_spaces;
+      }
+    }
+    lot.updated_at = nowTimestamp();
+
+    return HttpResponse.json({ parking_lot: lot });
+  }),
+
+  http.delete("/parking/v1/lots/:id", async ({ params }) => {
+    await delay(300);
+    const id = params.id as string;
+    const idx = mockParkingLots.findIndex((l) => l.id === id);
+    if (idx === -1) {
+      return HttpResponse.json(
+        { error: "NOT_FOUND", message: "停车场不存在" },
+        { status: 404 }
+      );
+    }
+    mockParkingLots.splice(idx, 1);
+    return HttpResponse.json({});
+  }),
+];
+
+export const laneHandlers = [
+  http.get("/api/parking-lots/:id/lanes", async ({ params }) => {
+    await delay(200);
+    const id = params.id as string;
 
     const config = getLaneConfigByParkingLotId(id);
     return HttpResponse.json({ data: config });
@@ -136,25 +163,6 @@ export const parkingLotHandlers = [
       }>;
     };
 
-    const lot = mockParkingLots.find((l) => l.id === id);
-    if (!lot) {
-      return HttpResponse.json(
-        { code: "NOT_FOUND", message: "停车场不存在" },
-        { status: 404 }
-      );
-    }
-
-    const existingIndex = mockLanes.findIndex((l) => l.parkingLotId === id);
-    if (existingIndex !== -1) {
-      const idx = mockLanes.findIndex((l) => l.parkingLotId === id);
-      while (idx !== -1) {
-        mockLanes.splice(idx, 1);
-        const nextIdx = mockLanes.findIndex((l) => l.parkingLotId === id);
-        if (nextIdx === -1 || nextIdx >= mockLanes.length) break;
-        if (nextIdx === idx) break;
-      }
-    }
-    mockLanes.filter = mockLanes.filter.bind(mockLanes);
     const toRemove = mockLanes.filter((l) => l.parkingLotId === id);
     for (const lane of toRemove) {
       const i = mockLanes.indexOf(lane);
@@ -187,11 +195,6 @@ export const parkingLotHandlers = [
     });
 
     mockLanes.push(...updatedLanes);
-
-    lot.entryCount = updatedLanes.filter((l) => l.type === "entry").length;
-    lot.exitCount = updatedLanes.filter((l) => l.type === "exit").length;
-    lot.laneCount = updatedLanes.length;
-    lot.updatedAt = new Date().toISOString();
 
     return HttpResponse.json({ data: updatedLanes });
   }),

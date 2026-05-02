@@ -1,0 +1,1971 @@
+openapi: 3.0.3
+
+info:
+  title: ParkHub API
+  description: ParkHub SaaS 停车管理系统后端 API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:9080
+    description: 本地开发环境
+
+tags:
+  - name: Auth
+    description: 认证鉴权
+  - name: SMS
+    description: 短信验证码
+  - name: User
+    description: 用户管理
+  - name: Tenant
+    description: 租户管理
+  - name: ParkingLot
+    description: 停车场管理
+  - name: Device
+    description: IoT 设备管理
+
+components:
+  parameters:
+    TenantId:
+      name: tenant_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 租户ID
+
+    UserId:
+      name: user_id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 用户ID
+
+    DeviceId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 设备ID
+
+  schemas:
+    PaginationRequest:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+          default: 1
+        page_size:
+          type: integer
+          format: int32
+          default: 20
+
+    PaginationResponse:
+      type: object
+      properties:
+        page:
+          type: integer
+          format: int32
+        page_size:
+          type: integer
+          format: int32
+        total:
+          type: integer
+          format: int64
+        total_pages:
+          type: integer
+          format: int32
+
+    Timestamp:
+      type: object
+      properties:
+        seconds:
+          type: integer
+          format: int64
+        nanos:
+          type: integer
+          format: int32
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    TenantStatus:
+      type: string
+      enum:
+        - TENANT_STATUS_UNSPECIFIED
+        - TENANT_STATUS_ACTIVE
+        - TENANT_STATUS_FROZEN
+
+    PlanType:
+      type: string
+      enum:
+        - PLAN_TYPE_UNSPECIFIED
+        - PLAN_TYPE_FREE
+        - PLAN_TYPE_BASIC
+        - PLAN_TYPE_PRO
+        - PLAN_TYPE_ENTERPRISE
+
+    Tenant:
+      type: object
+      properties:
+        tenant_id:
+          type: string
+        name:
+          type: string
+        contact_name:
+          type: string
+        contact_phone:
+          type: string
+        contact_email:
+          type: string
+        status:
+          $ref: '#/components/schemas/TenantStatus'
+        address:
+          type: string
+        plan_type:
+          $ref: '#/components/schemas/PlanType'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+        description:
+          type: string
+        credit_code:
+          type: string
+        remark:
+          type: string
+        parking_lot_count:
+          type: integer
+          format: int32
+          readOnly: true
+
+    CreateTenantRequest:
+      type: object
+      required:
+        - name
+        - contact_name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        contact_name:
+          type: string
+          minLength: 1
+        contact_phone:
+          type: string
+        contact_email:
+          type: string
+        address:
+          type: string
+        plan_type:
+          $ref: '#/components/schemas/PlanType'
+        description:
+          type: string
+        credit_code:
+          type: string
+        remark:
+          type: string
+
+    UpdateTenantRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        contact_name:
+          type: string
+        contact_phone:
+          type: string
+        contact_email:
+          type: string
+        address:
+          type: string
+        plan_type:
+          $ref: '#/components/schemas/PlanType'
+        description:
+          type: string
+        credit_code:
+          type: string
+        remark:
+          type: string
+
+    UserRole:
+      type: string
+      enum:
+        - USER_ROLE_UNSPECIFIED
+        - USER_ROLE_PLATFORM_ADMIN
+        - USER_ROLE_TENANT_ADMIN
+        - USER_ROLE_OPERATOR
+
+    UserStatus:
+      type: string
+      enum:
+        - USER_STATUS_UNSPECIFIED
+        - USER_STATUS_ACTIVE
+        - USER_STATUS_FROZEN
+
+    User:
+      type: object
+      properties:
+        user_id:
+          type: string
+        tenant_id:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        real_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+        status:
+          $ref: '#/components/schemas/UserStatus'
+        last_login_at:
+          $ref: '#/components/schemas/Timestamp'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        access_expires_in:
+          type: integer
+          format: int32
+          description: Access Token 有效期（秒）
+        token_type:
+          type: string
+          example: Bearer
+        user:
+          $ref: '#/components/schemas/User'
+
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    RefreshTokenResponse:
+      type: object
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        access_expires_in:
+          type: integer
+          format: int32
+        token_type:
+          type: string
+          example: Bearer
+
+    LogoutRequest:
+      type: object
+      required:
+        - refresh_token
+      properties:
+        refresh_token:
+          type: string
+
+    SmsPurpose:
+      type: string
+      enum:
+        - SMS_PURPOSE_UNSPECIFIED
+        - SMS_PURPOSE_LOGIN
+        - SMS_PURPOSE_REGISTER
+        - SMS_PURPOSE_RESET_PASSWORD
+
+    SendSmsCodeRequest:
+      type: object
+      required:
+        - phone
+        - purpose
+      properties:
+        phone:
+          type: string
+          description: 手机号
+        purpose:
+          $ref: '#/components/schemas/SmsPurpose'
+
+    SendSmsCodeResponse:
+      type: object
+      description: 发送成功返回空对象
+
+    SmsLoginRequest:
+      type: object
+      required:
+        - phone
+        - code
+      properties:
+        phone:
+          type: string
+          description: 手机号
+        code:
+          type: string
+          description: 短信验证码
+
+    CreateUserRequest:
+      type: object
+      required:
+        - username
+        - password
+        - real_name
+        - role
+      properties:
+        tenant_id:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+          minLength: 8
+        email:
+          type: string
+        phone:
+          type: string
+        real_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        real_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        real_name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+
+    ResetPasswordRequest:
+      type: object
+      required:
+        - new_password
+      properties:
+        new_password:
+          type: string
+          minLength: 8
+
+    ChangePasswordRequest:
+      type: object
+      required:
+        - old_password
+        - new_password
+      properties:
+        old_password:
+          type: string
+        new_password:
+          type: string
+          minLength: 8
+
+    ImportUserItem:
+      type: object
+      required:
+        - username
+        - password
+        - real_name
+        - role
+      properties:
+        tenant_id:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        real_name:
+          type: string
+        role:
+          $ref: '#/components/schemas/UserRole'
+
+    ImportUsersRequest:
+      type: object
+      required:
+        - users
+      properties:
+        users:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportUserItem'
+
+    ImportError:
+      type: object
+      properties:
+        index:
+          type: integer
+          format: int32
+        message:
+          type: string
+
+    ImportUsersResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int32
+        success:
+          type: integer
+          format: int32
+        failed:
+          type: integer
+          format: int32
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ImportError'
+
+    LotType:
+      type: string
+      enum:
+        - LOT_TYPE_UNSPECIFIED
+        - LOT_TYPE_UNDERGROUND
+        - LOT_TYPE_GROUND
+        - LOT_TYPE_STEREO
+
+    ParkingLotStatus:
+      type: string
+      enum:
+        - PARKING_LOT_STATUS_UNSPECIFIED
+        - PARKING_LOT_STATUS_ACTIVE
+        - PARKING_LOT_STATUS_INACTIVE
+
+    ParkingLot:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant_id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+        total_spaces:
+          type: integer
+          format: int32
+        available_spaces:
+          type: integer
+          format: int32
+        lot_type:
+          $ref: '#/components/schemas/LotType'
+        status:
+          $ref: '#/components/schemas/ParkingLotStatus'
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+
+    CreateParkingLotRequest:
+      type: object
+      required:
+        - name
+        - address
+        - total_spaces
+        - lot_type
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        address:
+          type: string
+          minLength: 1
+          maxLength: 255
+        total_spaces:
+          type: integer
+          format: int32
+          minimum: 1
+        lot_type:
+          $ref: '#/components/schemas/LotType'
+
+    UpdateParkingLotRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        address:
+          type: string
+        total_spaces:
+          type: integer
+          format: int32
+        lot_type:
+          $ref: '#/components/schemas/LotType'
+        status:
+          $ref: '#/components/schemas/ParkingLotStatus'
+
+    ParkingLotStatsResponse:
+      type: object
+      properties:
+        total_spaces:
+          type: integer
+          format: int64
+        available_spaces:
+          type: integer
+          format: int64
+        occupied_vehicles:
+          type: integer
+          format: int64
+        total_gates:
+          type: integer
+          format: int64
+
+    TenantSummaryResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+          description: 租户总数
+        active:
+          type: integer
+          format: int64
+          description: 活跃租户数
+        frozen:
+          type: integer
+          format: int64
+          description: 冻结租户数
+        total_parking_lots:
+          type: integer
+          format: int64
+          description: 停车场总数
+        avg_parking_lots_per_tenant:
+          type: number
+          format: double
+          description: 平均每租户停车场数
+
+    DeviceType:
+      type: string
+      enum:
+        - DEVICE_TYPE_INTEGRATED
+        - DEVICE_TYPE_CAMERA_ONLY
+        - DEVICE_TYPE_BARRIER_ONLY
+
+    DeviceStatus:
+      type: string
+      enum:
+        - DEVICE_STATUS_PENDING
+        - DEVICE_STATUS_ACTIVE
+        - DEVICE_STATUS_OFFLINE
+        - DEVICE_STATUS_DISABLED
+
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+        tenant_id:
+          type: string
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/DeviceType'
+        status:
+          $ref: '#/components/schemas/DeviceStatus'
+        firmware_version:
+          type: string
+        last_heartbeat:
+          $ref: '#/components/schemas/Timestamp'
+        parking_lot_id:
+          type: string
+          nullable: true
+        gate_id:
+          type: string
+          nullable: true
+        created_at:
+          $ref: '#/components/schemas/Timestamp'
+        updated_at:
+          $ref: '#/components/schemas/Timestamp'
+
+    CreateDeviceRequest:
+      type: object
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          description: 设备序列号
+        name:
+          type: string
+        type:
+          $ref: '#/components/schemas/DeviceType'
+        firmware_version:
+          type: string
+
+    UpdateDeviceNameRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+
+    BindDeviceRequest:
+      type: object
+      required:
+        - parking_lot_id
+        - gate_id
+      properties:
+        parking_lot_id:
+          type: string
+        gate_id:
+          type: string
+
+    BatchBindDeviceItem:
+      type: object
+      required:
+        - id
+        - parking_lot_id
+        - gate_id
+      properties:
+        id:
+          type: string
+        parking_lot_id:
+          type: string
+        gate_id:
+          type: string
+
+    BatchIdsRequest:
+      type: object
+      required:
+        - ids
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+
+    BatchBindDevicesRequest:
+      type: object
+      required:
+        - bindings
+      properties:
+        bindings:
+          type: array
+          items:
+            $ref: '#/components/schemas/BatchBindDeviceItem'
+
+    BatchAffectedResponse:
+      type: object
+      properties:
+        affected:
+          type: integer
+          format: int32
+
+    DeviceStatsResponse:
+      type: object
+      properties:
+        total:
+          type: integer
+          format: int64
+        active:
+          type: integer
+          format: int64
+        offline:
+          type: integer
+          format: int64
+        pending:
+          type: integer
+          format: int64
+        disabled:
+          type: integer
+          format: int64
+
+    SendDeviceCommandRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          enum: [up, down]
+          description: up=抬杆, down=落杆
+
+    SendDeviceCommandResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+
+    securitySchemes:
+      BearerAuth:
+        type: http
+        scheme: bearer
+        bearerFormat: JWT
+
+security: []
+
+paths:
+  /identity/v1/auth/login:
+    post:
+      tags: [Auth]
+      operationId: login
+      summary: 用户登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: 用户名或密码错误 / 用户已冻结
+
+  /identity/v1/auth/refresh:
+    post:
+      tags: [Auth]
+      operationId: refreshToken
+      summary: 刷新 Token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: 刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshTokenResponse'
+        '401':
+          description: Refresh Token 无效 / 已过期 / 已被吊销
+
+  /identity/v1/auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logout
+      summary: 登出
+      description: 吊销 Refresh Token，重复调用幂等成功
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: 登出成功
+        '401':
+          description: Refresh Token 无效
+
+  /identity/v1/auth/jwks:
+    get:
+      tags: [Auth]
+      operationId: getJWKS
+      summary: 获取 JWKS 公钥
+      description: 导出 RS256 公钥（RFC 7517），用于调试，不作为 APISIX 主配置来源
+      responses:
+        '200':
+          description: JWKS JSON
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jwks_json:
+                    type: string
+                    format: byte
+
+  /identity/v1/auth/sms/send:
+    post:
+      tags: [SMS]
+      operationId: sendSmsCode
+      summary: 发送短信验证码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendSmsCodeRequest'
+      responses:
+        '200':
+          description: 发送成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendSmsCodeResponse'
+        '400':
+          description: 手机号格式错误
+        '429':
+          description: 发送频率限制
+
+  /identity/v1/auth/sms/login:
+    post:
+      tags: [SMS]
+      operationId: smsLogin
+      summary: 短信验证码登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SmsLoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 验证码错误或已过期
+        '401':
+          description: 用户不存在或已冻结
+
+  /identity/v1/users/me:
+    get:
+      tags: [User]
+      operationId: getCurrentUser
+      summary: 获取当前登录用户信息
+      description: 从 JWT 中提取用户ID，返回当前用户详情。用于路由守卫 / token 续签场景。
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 未认证 / Token 无效
+
+  /identity/v1/users:
+    post:
+      tags: [User]
+      operationId: createUser
+      summary: 创建用户
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: 参数错误
+        '409':
+          description: 用户已存在
+
+    get:
+      tags: [User]
+      operationId: listUsers
+      summary: 获取用户列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: tenant_id
+          in: query
+          schema:
+            type: string
+        - name: role
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserRole'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/UserStatus'
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 按用户名/姓名搜索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  users:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/User'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: 未认证
+
+  /identity/v1/users/import:
+    post:
+      tags: [User]
+      operationId: importUsers
+      summary: 批量导入用户
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ImportUsersRequest'
+      responses:
+        '200':
+          description: 导入完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ImportUsersResponse'
+        '401':
+          description: 未认证
+
+  /identity/v1/users/{user_id}:
+    get:
+      tags: [User]
+      operationId: getUser
+      summary: 获取用户详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+    put:
+      tags: [User]
+      operationId: updateUser
+      summary: 更新用户
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /identity/v1/users/{user_id}/freeze:
+    post:
+      tags: [User]
+      operationId: freezeUser
+      summary: 冻结用户
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: 冻结成功
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /identity/v1/users/{user_id}/unfreeze:
+    post:
+      tags: [User]
+      operationId: unfreezeUser
+      summary: 解冻用户
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      responses:
+        '200':
+          description: 解冻成功
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /identity/v1/users/{user_id}/reset-password:
+    post:
+      tags: [User]
+      operationId: resetPassword
+      summary: 重置密码（管理员）
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPasswordRequest'
+      responses:
+        '200':
+          description: 重置成功
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /identity/v1/users/{user_id}/profile:
+    put:
+      tags: [User]
+      operationId: updateProfile
+      summary: 更新个人资料
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /identity/v1/users/{user_id}/change-password:
+    post:
+      tags: [User]
+      operationId: changePassword
+      summary: 修改密码
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/UserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '200':
+          description: 修改成功
+        '400':
+          description: 旧密码错误
+        '401':
+          description: 未认证
+        '404':
+          description: 用户不存在
+
+  /api/v1/tenants:
+    post:
+      tags: [Tenant]
+      operationId: createTenant
+      summary: 创建租户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTenantRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+        '400':
+          description: 参数错误
+        '409':
+          description: 租户已存在
+
+    get:
+      tags: [Tenant]
+      operationId: listTenants
+      summary: 获取租户列表
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/TenantStatus'
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 按名称/联系人搜索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenants:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Tenant'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+
+  /api/v1/tenants/{tenant_id}:
+    get:
+      tags: [Tenant]
+      operationId: getTenant
+      summary: 获取租户详情
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+        '404':
+          description: 租户不存在
+
+    put:
+      tags: [Tenant]
+      operationId: updateTenant
+      summary: 更新租户
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTenantRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+        '404':
+          description: 租户不存在
+
+    delete:
+      tags: [Tenant]
+      operationId: deleteTenant
+      summary: 删除租户
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: 删除成功
+        '404':
+          description: 租户不存在
+
+  /api/v1/tenants/{tenant_id}/freeze:
+    post:
+      tags: [Tenant]
+      operationId: freezeTenant
+      summary: 冻结租户
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reason:
+                  type: string
+                  description: 冻结原因（可选）
+      responses:
+        '200':
+          description: 冻结成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+        '400':
+          description: 租户已是冻结状态
+        '404':
+          description: 租户不存在
+
+  /api/v1/tenants/{tenant_id}/unfreeze:
+    post:
+      tags: [Tenant]
+      operationId: unfreezeTenant
+      summary: 解冻租户
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: 解冻成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tenant:
+                    $ref: '#/components/schemas/Tenant'
+        '400':
+          description: 租户已是正常状态
+        '404':
+          description: 租户不存在
+
+  /api/v1/tenants/summary:
+    get:
+      tags: [Tenant]
+      operationId: getTenantSummary
+      summary: 获取租户概览统计
+      description: 返回租户总数、活跃/冻结数、停车场总数及平均数
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TenantSummaryResponse'
+        '401':
+          description: 未认证
+
+  /api/v1/tenants/{tenant_id}/parking-lots:
+    get:
+      tags: [Tenant, ParkingLot]
+      operationId: listTenantParkingLots
+      summary: 获取指定租户的停车场列表
+      description: 通过租户ID查询其名下所有停车场
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TenantId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ParkingLotStatus'
+        - name: lot_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/LotType'
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 按名称/地址搜索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking_lots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParkingLot'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: 未认证
+
+  /parking/v1/lots/stats:
+    get:
+      tags: [ParkingLot]
+      operationId: getParkingLotStats
+      summary: 获取停车场统计
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ParkingLotStatsResponse'
+        '401':
+          description: 未认证
+
+  /parking/v1/lots:
+    post:
+      tags: [ParkingLot]
+      operationId: createParkingLot
+      summary: 创建停车场
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateParkingLotRequest'
+      responses:
+        '200':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking_lot:
+                    $ref: '#/components/schemas/ParkingLot'
+        '400':
+          description: 参数错误
+        '401':
+          description: 未认证
+        '409':
+          description: 同租户下停车场名重复
+
+    get:
+      tags: [ParkingLot]
+      operationId: listParkingLots
+      summary: 获取停车场列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ParkingLotStatus'
+        - name: lot_type
+          in: query
+          schema:
+            $ref: '#/components/schemas/LotType'
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 按名称/地址搜索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking_lots:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ParkingLot'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: 未认证
+
+  /parking/v1/lots/{id}:
+    get:
+      tags: [ParkingLot]
+      operationId: getParkingLot
+      summary: 获取停车场详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking_lot:
+                    $ref: '#/components/schemas/ParkingLot'
+        '401':
+          description: 未认证
+        '404':
+          description: 停车场不存在
+
+    patch:
+      tags: [ParkingLot]
+      operationId: updateParkingLot
+      summary: 更新停车场
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateParkingLotRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  parking_lot:
+                    $ref: '#/components/schemas/ParkingLot'
+        '400':
+          description: 参数错误 / 状态转换非法
+        '401':
+          description: 未认证
+        '404':
+          description: 停车场不存在
+
+  /iot/v1/devices:
+    post:
+      tags: [Device]
+      operationId: createDevice
+      summary: 注册设备
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDeviceRequest'
+      responses:
+        '200':
+          description: 注册成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '400':
+          description: 参数错误
+        '401':
+          description: 未认证
+        '409':
+          description: 设备ID重复
+
+    get:
+      tags: [Device]
+      operationId: listDevices
+      summary: 获取设备列表
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/DeviceStatus'
+        - name: parking_lot_id
+          in: query
+          schema:
+            type: string
+          description: 按停车场ID过滤
+        - name: keyword
+          in: query
+          schema:
+            type: string
+          description: 按设备名称/ID搜索
+        - name: page
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 1
+        - name: page_size
+          in: query
+          schema:
+            type: integer
+            format: int32
+            default: 20
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  devices:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                  pagination:
+                    $ref: '#/components/schemas/PaginationResponse'
+        '401':
+          description: 未认证
+
+  /iot/v1/devices/stats:
+    get:
+      tags: [Device]
+      operationId: getDeviceStats
+      summary: 获取设备统计
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceStatsResponse'
+        '401':
+          description: 未认证
+
+  /iot/v1/devices/{id}:
+    get:
+      tags: [Device]
+      operationId: getDevice
+      summary: 获取设备详情
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+
+    patch:
+      tags: [Device]
+      operationId: updateDeviceName
+      summary: 更新设备名称
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDeviceNameRequest'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '400':
+          description: 参数错误
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+
+    delete:
+      tags: [Device]
+      operationId: deleteDevice
+      summary: 删除设备
+      description: 已绑定的设备需先解绑
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 删除成功
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备已绑定，需先解绑
+
+  /iot/v1/devices/{id}/bind:
+    post:
+      tags: [Device]
+      operationId: bindDevice
+      summary: 绑定设备到停车场/道闸
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BindDeviceRequest'
+      responses:
+        '200':
+          description: 绑定成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '400':
+          description: 参数错误
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备状态不允许绑定
+
+  /iot/v1/devices/{id}/unbind:
+    post:
+      tags: [Device]
+      operationId: unbindDevice
+      summary: 解绑设备
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 解绑成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备未绑定
+
+  /iot/v1/devices/{id}/disable:
+    post:
+      tags: [Device]
+      operationId: disableDevice
+      summary: 停用设备
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 停用成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备已停用
+
+  /iot/v1/devices/{id}/enable:
+    post:
+      tags: [Device]
+      operationId: enableDevice
+      summary: 启用设备
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      responses:
+        '200':
+          description: 启用成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  device:
+                    $ref: '#/components/schemas/Device'
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备状态不允许启用
+
+  /iot/v1/devices/{id}/command:
+    post:
+      tags: [Device]
+      operationId: sendDeviceCommand
+      summary: 发送设备指令（抬杆/落杆）
+      security:
+        - BearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DeviceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendDeviceCommandRequest'
+      responses:
+        '200':
+          description: 指令已发送
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendDeviceCommandResponse'
+        '400':
+          description: 无效指令
+        '401':
+          description: 未认证
+        '404':
+          description: 设备不存在
+        '412':
+          description: 设备离线或已停用
+
+  /iot/v1/devices/batch/disable:
+    post:
+      tags: [Device]
+      operationId: batchDisableDevices
+      summary: 批量停用设备
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchIdsRequest'
+      responses:
+        '200':
+          description: 操作完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAffectedResponse'
+        '401':
+          description: 未认证
+
+  /iot/v1/devices/batch/enable:
+    post:
+      tags: [Device]
+      operationId: batchEnableDevices
+      summary: 批量启用设备
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchIdsRequest'
+      responses:
+        '200':
+          description: 操作完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAffectedResponse'
+        '401':
+          description: 未认证
+
+  /iot/v1/devices/batch/delete:
+    post:
+      tags: [Device]
+      operationId: batchDeleteDevices
+      summary: 批量删除设备
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchIdsRequest'
+      responses:
+        '200':
+          description: 操作完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAffectedResponse'
+        '401':
+          description: 未认证
+
+  /iot/v1/devices/batch/bind:
+    post:
+      tags: [Device]
+      operationId: batchBindDevices
+      summary: 批量绑定设备
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchBindDevicesRequest'
+      responses:
+        '200':
+          description: 操作完成
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchAffectedResponse'
+        '401':
+          description: 未认证

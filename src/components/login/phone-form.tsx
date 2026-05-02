@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/lib/constants";
 import { authService } from "@/lib/api/auth";
-import { smsLoginSchema, type SmsLoginFormData } from "@/lib/api/contracts";
+import { smsLoginSchema } from "@/lib/api/contracts";
 import { ApiClientError } from "@/lib/api/client";
+import { cn } from "@/lib/utils";
 
 export function PhoneForm() {
   const { loginBySms } = useAuth();
@@ -17,17 +17,31 @@ export function PhoneForm() {
   const [countdown, setCountdown] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const {
-    register,
-    handleSubmit,
-    getValues,
-    formState: { errors, isSubmitting },
-  } = useForm<SmsLoginFormData>({
-    resolver: zodResolver(smsLoginSchema),
+  const form = useForm({
     defaultValues: {
       phone: "",
       code: "",
-      rememberMe: true,
+      rememberMe: true as boolean,
+    },
+    validators: {
+      onChange: smsLoginSchema,
+    },
+    onSubmit: async ({ value }) => {
+      setServerError("");
+      try {
+        await loginBySms({
+          phone: value.phone,
+          code: value.code,
+          rememberMe: value.rememberMe,
+        });
+        router.push(ROUTES.DASHBOARD_HOME);
+      } catch (err) {
+        if (err instanceof ApiClientError) {
+          setServerError(err.message);
+        } else {
+          setServerError("登录失败，请稍后重试");
+        }
+      }
     },
   });
 
@@ -38,7 +52,7 @@ export function PhoneForm() {
   }, []);
 
   const sendSmsCode = useCallback(async () => {
-    const phone = getValues("phone");
+    const phone = form.getFieldValue("phone");
     if (!/^1[3-9]\d{9}$/.test(phone)) return;
 
     try {
@@ -56,28 +70,16 @@ export function PhoneForm() {
     } catch {
       setServerError("发送验证码失败，请稍后重试");
     }
-  }, [getValues]);
-
-  const onSubmit = async (data: SmsLoginFormData) => {
-    setServerError("");
-    try {
-      await loginBySms({
-        phone: data.phone,
-        code: data.code,
-        rememberMe: data.rememberMe,
-      });
-      router.push(ROUTES.DASHBOARD_HOME);
-    } catch (err) {
-      if (err instanceof ApiClientError) {
-        setServerError(err.message);
-      } else {
-        setServerError("登录失败，请稍后重试");
-      }
-    }
-  };
+  }, [form]);
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        form.handleSubmit();
+      }}
+      className="space-y-5"
+    >
       <div>
         <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1.5">
           手机号
@@ -88,19 +90,29 @@ export function PhoneForm() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
             </svg>
           </div>
-          <input
-            id="phone"
-            type="tel"
-            autoComplete="tel"
-            inputMode="tel"
-            placeholder="请输入手机号…"
-            {...register("phone")}
-            className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
-          />
+          <form.Field name="phone">
+            {(field) => (
+              <input
+                id="phone"
+                type="tel"
+                autoComplete="tel"
+                inputMode="tel"
+                placeholder="请输入手机号…"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+              />
+            )}
+          </form.Field>
         </div>
-        {errors.phone && (
-          <p className="mt-1 text-xs text-red-500">{errors.phone.message}</p>
-        )}
+        <form.Field name="phone">
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
+        </form.Field>
       </div>
 
       <div>
@@ -114,16 +126,22 @@ export function PhoneForm() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
               </svg>
             </div>
-            <input
-              id="sms-code"
-              type="text"
-              autoComplete="one-time-code"
-              inputMode="numeric"
-              placeholder="请输入验证码…"
-              spellCheck={false}
-              {...register("code")}
-              className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
-            />
+            <form.Field name="code">
+              {(field) => (
+                <input
+                  id="sms-code"
+                  type="text"
+                  autoComplete="one-time-code"
+                  inputMode="numeric"
+                  placeholder="请输入验证码…"
+                  spellCheck={false}
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  className="w-full h-11 pl-10 pr-4 rounded-lg border border-gray-200 text-sm text-gray-900 placeholder-gray-400 hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-[3px] focus:ring-brand-500/15 transition-shadow"
+                />
+              )}
+            </form.Field>
           </div>
           <button
             type="button"
@@ -139,9 +157,13 @@ export function PhoneForm() {
             {countdown > 0 ? `${countdown}s 后重发` : "获取验证码"}
           </button>
         </div>
-        {errors.code && (
-          <p className="mt-1 text-xs text-red-500">{errors.code.message}</p>
-        )}
+        <form.Field name="code">
+          {(field) =>
+            field.state.meta.errors.length > 0 ? (
+              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+            ) : null
+          }
+        </form.Field>
       </div>
 
       {serverError && (
@@ -152,15 +174,15 @@ export function PhoneForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={form.state.isSubmitting}
         className="w-full h-11 rounded-lg text-white text-sm font-medium flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed mt-8"
         style={{
-          background: isSubmitting
+          background: form.state.isSubmitting
             ? "#2563eb"
             : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
         }}
       >
-        {isSubmitting ? (
+        {form.state.isSubmitting ? (
           <>
             <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -174,8 +196,4 @@ export function PhoneForm() {
       </button>
     </form>
   );
-}
-
-function cn(...classes: (string | boolean | undefined)[]) {
-  return classes.filter(Boolean).join(" ");
 }

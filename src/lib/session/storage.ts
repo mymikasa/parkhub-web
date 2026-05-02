@@ -24,7 +24,7 @@ export function loadSession(): Session | null {
 
   try {
     const session: Session = JSON.parse(raw);
-    if (Date.now() > session.expiresAt) {
+    if (!session.refreshToken && Date.now() > session.expiresAt) {
       clearSession();
       return null;
     }

@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "@tanstack/react-form";
 import { Modal } from "@/components/shared/modal";
 import { createTenantSchema, type CreateTenantFormData } from "@/lib/api/contracts";
 import type { Tenant } from "@/types";
@@ -19,13 +18,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
   const [error, setError] = useState("");
   const isEdit = !!tenant;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<CreateTenantFormData>({
-    resolver: zodResolver(createTenantSchema),
+  const form = useForm({
     defaultValues: tenant
       ? {
           companyName: tenant.companyName,
@@ -36,28 +29,37 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
           adminEmail: tenant.adminEmail ?? "",
           remark: tenant.remark ?? "",
         }
-      : undefined,
-  });
-
-  const onSubmit = async (data: CreateTenantFormData) => {
-    setLoading(true);
-    setError("");
-    try {
-      const { tenantService } = await import("@/lib/api/tenants");
-      if (isEdit && tenant) {
-        await tenantService.update(tenant.id, data);
-      } else {
-        await tenantService.create(data);
+      : {
+          companyName: "",
+          description: "",
+          creditCode: "",
+          contactPerson: "",
+          contactPhone: "",
+          adminEmail: "",
+          remark: "",
+        },
+    validators: {
+      onChange: createTenantSchema as any,
+    },
+    onSubmit: async ({ value }) => {
+      setLoading(true);
+      setError("");
+      try {
+        const { tenantService } = await import("@/lib/api/tenants");
+        if (isEdit && tenant) {
+          await tenantService.update(tenant.id, value);
+        } else {
+          await tenantService.create(value);
+        }
+        onSuccess();
+        onClose();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "操作失败");
+      } finally {
+        setLoading(false);
       }
-      reset();
-      onSuccess();
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "操作失败");
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+  });
 
   return (
     <Modal
@@ -73,7 +75,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
             取消
           </button>
           <button
-            onClick={handleSubmit(onSubmit)}
+            onClick={() => form.handleSubmit()}
             disabled={loading}
             className="h-10 px-5 rounded-lg bg-gradient-to-r from-brand-600 to-brand-700 text-white text-sm font-medium hover:from-brand-700 hover:to-brand-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -82,7 +84,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
         </>
       }
     >
-      <form className="space-y-5" onSubmit={handleSubmit(onSubmit)}>
+      <form className="space-y-5" onSubmit={(e) => { e.preventDefault(); form.handleSubmit(); }}>
         {error && (
           <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">{error}</div>
         )}
@@ -91,32 +93,50 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
           <label className="block text-sm font-medium text-gray-700 mb-1.5">
             公司名称 <span className="text-red-500">*</span>
           </label>
-          <input
-            {...register("companyName")}
-            placeholder="请输入公司全称"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-          />
-          {errors.companyName && (
-            <p className="mt-1 text-xs text-red-500">{errors.companyName.message}</p>
-          )}
+          <form.Field name="companyName">
+            {(field) => (
+              <>
+                <input
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="请输入公司全称"
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+                )}
+              </>
+            )}
+          </form.Field>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">企业描述</label>
-          <input
-            {...register("description")}
-            placeholder="选填，如：母公司或子公司关系"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-          />
+          <form.Field name="description">
+            {(field) => (
+              <input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="选填，如：母公司或子公司关系"
+                className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+              />
+            )}
+          </form.Field>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">统一社会信用代码</label>
-          <input
-            {...register("creditCode")}
-            placeholder="请输入18位信用代码"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-          />
+          <form.Field name="creditCode">
+            {(field) => (
+              <input
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                placeholder="请输入18位信用代码"
+                className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+              />
+            )}
+          </form.Field>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -124,50 +144,79 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               联系人 <span className="text-red-500">*</span>
             </label>
-            <input
-              {...register("contactPerson")}
-              placeholder="姓名"
-              className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-            />
-            {errors.contactPerson && (
-              <p className="mt-1 text-xs text-red-500">{errors.contactPerson.message}</p>
-            )}
+            <form.Field name="contactPerson">
+              {(field) => (
+                <>
+                  <input
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="姓名"
+                    className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+                  )}
+                </>
+              )}
+            </form.Field>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1.5">
               联系电话 <span className="text-red-500">*</span>
             </label>
-            <input
-              {...register("contactPhone")}
-              placeholder="手机号"
-              className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-            />
-            {errors.contactPhone && (
-              <p className="mt-1 text-xs text-red-500">{errors.contactPhone.message}</p>
-            )}
+            <form.Field name="contactPhone">
+              {(field) => (
+                <>
+                  <input
+                    value={field.state.value}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    onBlur={field.handleBlur}
+                    placeholder="手机号"
+                    className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+                  )}
+                </>
+              )}
+            </form.Field>
           </div>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">管理员邮箱</label>
-          <input
-            {...register("adminEmail")}
-            placeholder="用于接收系统通知"
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
-          />
-          {errors.adminEmail && (
-            <p className="mt-1 text-xs text-red-500">{errors.adminEmail.message}</p>
-          )}
+          <form.Field name="adminEmail">
+            {(field) => (
+              <>
+                <input
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  placeholder="用于接收系统通知"
+                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
+                />
+                {field.state.meta.errors.length > 0 && (
+                  <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+                )}
+              </>
+            )}
+          </form.Field>
         </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1.5">备注</label>
-          <textarea
-            {...register("remark")}
-            rows={3}
-            placeholder="选填"
-            className="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 resize-none"
-          />
+          <form.Field name="remark">
+            {(field) => (
+              <textarea
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                rows={3}
+                placeholder="选填"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 resize-none"
+              />
+            )}
+          </form.Field>
         </div>
       </form>
     </Modal>

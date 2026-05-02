@@ -1,4 +1,4 @@
-import type { ApiError } from "@/types";
+import type { ApiError, Session } from "@/types";
 import { AUTH_STORAGE_KEY } from "@/lib/constants";
 import { keysToCamel, keysToSnake } from "./case";
 
@@ -16,7 +16,7 @@ export class ApiClientError extends Error {
   }
 }
 
-const REAL_API_PREFIXES = ["/identity/", "/tenant/"];
+const REAL_API_PREFIXES = ["/identity/", "/tenant/", "/api/v1/", "/parking/", "/iot/"];
 
 function isRealApiPath(path: string): boolean {
   return REAL_API_PREFIXES.some((p) => path.startsWith(p));
@@ -28,17 +28,39 @@ function resolveUrl(path: string): string {
   return path;
 }
 
-function getToken(): string | null {
+function getSession(): Session | null {
   if (typeof window === "undefined") return null;
   try {
     const raw =
       localStorage.getItem(AUTH_STORAGE_KEY) ??
       sessionStorage.getItem(AUTH_STORAGE_KEY);
     if (!raw) return null;
-    const session = JSON.parse(raw);
-    return session?.accessToken ?? session?.token ?? null;
+    return JSON.parse(raw) as Session;
   } catch {
     return null;
+  }
+}
+
+function getToken(): string | null {
+  return getSession()?.accessToken ?? null;
+}
+
+function saveUpdatedSession(session: Session, newAccessToken: string, newRefreshToken?: string, expiresIn?: number): void {
+  const updated: Session = {
+    ...session,
+    accessToken: newAccessToken,
+    refreshToken: newRefreshToken ?? session.refreshToken,
+    expiresAt: expiresIn ? Date.now() + expiresIn * 1000 : session.expiresAt,
+  };
+  const storage = session.rememberMe ? localStorage : sessionStorage;
+  storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(updated));
+}
+
+function clearSession(): void {
+  localStorage.removeItem(AUTH_STORAGE_KEY);
+  sessionStorage.removeItem(AUTH_STORAGE_KEY);
+  if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
+    window.location.href = "/login";
   }
 }
 
@@ -49,6 +71,50 @@ function normalizeError(status: number, body: unknown): ApiClientError {
     message: String(err.message ?? "请求失败"),
     status,
   });
+}
+
+let refreshPromise: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  const session = getSession();
+  if (!session?.refreshToken) return false;
+
+  try {
+    const res = await fetch(resolveUrl("/identity/v1/auth/refresh"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: session.refreshToken }),
+    });
+
+    if (!res.ok) return false;
+
+    const json = await res.json();
+    const data = keysToCamel<{
+      accessToken: string;
+      refreshToken: string;
+      accessExpiresIn: number;
+    }>(json);
+
+    if (!data.accessToken) return false;
+
+    saveUpdatedSession(
+      session,
+      data.accessToken,
+      data.refreshToken,
+      data.accessExpiresIn
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function tryRefreshToken(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = refreshAccessToken().finally(() => {
+    refreshPromise = null;
+  });
+  return refreshPromise;
 }
 
 async function request<T>(
@@ -79,6 +145,41 @@ async function request<T>(
     headers,
     body,
   });
+
+  if (res.status === 401 && getToken()) {
+    const refreshed = await tryRefreshToken();
+    if (refreshed) {
+      const newToken = getToken();
+      const retryHeaders: Record<string, string> = {
+        "Content-Type": "application/json",
+        ...(options.headers as Record<string, string>),
+      };
+      if (newToken) {
+        retryHeaders["Authorization"] = `Bearer ${newToken}`;
+      }
+      const retryRes = await fetch(resolveUrl(path), {
+        ...options,
+        headers: retryHeaders,
+        body: options.body,
+      });
+      if (!retryRes.ok) {
+        let errBody: unknown;
+        try {
+          errBody = await retryRes.json();
+        } catch {
+          errBody = {};
+        }
+        throw normalizeError(retryRes.status, errBody);
+      }
+      if (retryRes.status === 204) return undefined as T;
+      const retryJson = await retryRes.json().catch(() => ({}));
+      if (real) {
+        return keysToCamel<T>(retryJson);
+      }
+      return ((retryJson as { data?: unknown })?.data ?? retryJson) as T;
+    }
+    clearSession();
+  }
 
   if (!res.ok) {
     let errBody: unknown;
