@@ -12,6 +12,8 @@ export const ROUTES = {
   ENTRY_EXIT_RECORDS: "/entry-exit-records",
   OPERATOR_WORKSPACE: "/operator-workspace",
   PAYMENT: "/pay",
+  PROFILE: "/profile",
+  RESET_PASSWORD: "/reset-password",
 } as const;
 
 export const DEMO_CREDENTIALS = {

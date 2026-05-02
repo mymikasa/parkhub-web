@@ -65,4 +65,16 @@ export const authService = {
       code: req.code,
     });
   },
+
+  updateProfile(data: { realName?: string; email?: string; phone?: string }): Promise<{ user: BackendUser }> {
+    return apiClient.patch("/identity/v1/users/me", data);
+  },
+
+  changePassword(data: { oldPassword: string; newPassword: string }): Promise<void> {
+    return apiClient.post("/identity/v1/users/me/password", data);
+  },
+
+  resetPassword(data: { phone: string; code: string; newPassword: string }): Promise<void> {
+    return apiClient.post("/identity/v1/auth/reset-password", data);
+  },
 };

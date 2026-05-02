@@ -104,7 +104,7 @@ export function PhoneForm() {
         <form.Field name="phone">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
             ) : null
           }
         </form.Field>
@@ -141,7 +141,7 @@ export function PhoneForm() {
         <form.Field name="code">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
             ) : null
           }
         </form.Field>

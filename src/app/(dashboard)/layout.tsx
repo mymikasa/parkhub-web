@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, { title: string; description: string }> = {
   "/realtime-monitor": { title: "实时监控", description: "实时运营数据大屏" },
   "/entry-exit-records": { title: "出入记录", description: "查询和管理车辆出入记录" },
   "/operator-workspace": { title: "操作员工作台", description: "快捷操作和异常处理" },
+  "/profile": { title: "个人资料", description: "管理您的账户信息" },
 };
 
 export default function DashboardLayout({

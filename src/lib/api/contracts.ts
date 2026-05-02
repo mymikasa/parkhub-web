@@ -191,3 +191,60 @@ export const paymentSchema = z.object({
 });
 
 export type PaymentFormData = z.infer<typeof paymentSchema>;
+
+// === Profile ===
+
+export const updateProfileSchema = z.object({
+  realName: z.string().min(1, "请输入姓名").max(50, "姓名不能超过50个字符"),
+  email: z.string().email("请输入有效的邮箱地址").optional().or(z.literal("")),
+  phone: z
+    .string()
+    .regex(/^1[3-9]\d{9}$/, "请输入有效的手机号")
+    .optional()
+    .or(z.literal("")),
+});
+
+export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
+
+export const changePasswordSchema = z
+  .object({
+    oldPassword: z.string().min(1, "请输入当前密码"),
+    newPassword: z
+      .string()
+      .min(8, "新密码至少8个字符")
+      .regex(/[A-Z]/, "新密码需包含大写字母")
+      .regex(/[a-z]/, "新密码需包含小写字母")
+      .regex(/[0-9]/, "新密码需包含数字"),
+    confirmPassword: z.string().min(1, "请确认新密码"),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "两次输入的密码不一致",
+    path: ["confirmPassword"],
+  });
+
+export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    phone: z
+      .string()
+      .min(1, "请输入手机号")
+      .regex(/^1[3-9]\d{9}$/, "请输入有效的手机号"),
+    code: z
+      .string()
+      .min(1, "请输入验证码")
+      .regex(/^\d{6}$/, "验证码为6位数字"),
+    newPassword: z
+      .string()
+      .min(8, "新密码至少8个字符")
+      .regex(/[A-Z]/, "新密码需包含大写字母")
+      .regex(/[a-z]/, "新密码需包含小写字母")
+      .regex(/[0-9]/, "新密码需包含数字"),
+    confirmPassword: z.string().min(1, "请确认新密码"),
+  })
+  .refine((d) => d.newPassword === d.confirmPassword, {
+    message: "两次输入的密码不一致",
+    path: ["confirmPassword"],
+  });
+
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;

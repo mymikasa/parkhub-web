@@ -148,8 +148,8 @@ export const parkingLotService = {
       {
         name: data.name,
         address: data.address,
-        total_spaces: data.totalSpots,
-        lot_type: LOT_TYPE_TO_BACKEND[data.type || "ground"],
+        totalSpaces: data.totalSpots,
+        lotType: LOT_TYPE_TO_BACKEND[data.type || "ground"],
       }
     );
     return mapParkingLot((res.parkingLot ?? res.parking_lot) as CamelParkingLot);
@@ -159,8 +159,8 @@ export const parkingLotService = {
     const body: Record<string, unknown> = {};
     if (data.name !== undefined) body.name = data.name;
     if (data.address !== undefined) body.address = data.address;
-    if (data.totalSpots !== undefined) body.total_spaces = data.totalSpots;
-    if (data.type !== undefined) body.lot_type = LOT_TYPE_TO_BACKEND[data.type];
+    if (data.totalSpots !== undefined) body.totalSpaces = data.totalSpots;
+    if (data.type !== undefined) body.lotType = LOT_TYPE_TO_BACKEND[data.type];
     if (data.status !== undefined) {
       const statusMap: Record<string, string> = {
         operating: "PARKING_LOT_STATUS_ACTIVE",

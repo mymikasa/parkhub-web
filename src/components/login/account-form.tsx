@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { useAuth } from "@/contexts/auth-context";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ROUTES } from "@/lib/constants";
 import { loginSchema } from "@/lib/api/contracts";
 import { ApiClientError } from "@/lib/api/client";
@@ -79,7 +80,7 @@ export function AccountForm() {
         <form.Field name="username">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
             ) : null
           }
         </form.Field>
@@ -130,7 +131,7 @@ export function AccountForm() {
         <form.Field name="password">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{String(field.state.meta.errors[0])}</p>
+              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
             ) : null
           }
         </form.Field>
@@ -150,9 +151,9 @@ export function AccountForm() {
           </form.Field>
           <span className="text-sm text-gray-600">记住登录状态</span>
         </label>
-        <a href="#" className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors">
+        <Link href={ROUTES.RESET_PASSWORD} className="text-sm text-brand-600 hover:text-brand-700 font-medium transition-colors">
           忘记密码？
-        </a>
+        </Link>
       </div>
 
       {serverError && (

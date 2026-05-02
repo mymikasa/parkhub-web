@@ -108,7 +108,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
                 )}
               </>
             )}
@@ -128,7 +128,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
                 )}
               </>
             )}
@@ -150,7 +150,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                     className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-red-500 text-xs mt-1">{String(field.state.meta.errors[0])}</p>
+                    <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
                   )}
                 </>
               )}
