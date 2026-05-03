@@ -4,12 +4,14 @@ import type {
   ParkingLotSummary,
   Lane,
   LaneConfigResponse,
+  DeviceOption,
   CreateParkingLotRequest,
   UpdateParkingLotRequest,
   UpdateLanesRequest,
   PaginatedResponse,
   ParkingLotType,
   ParkingLotStatus,
+  DeviceOnlineStatus,
 } from "@/types";
 
 const LOT_TYPE_TO_BACKEND: Record<ParkingLotType, string> = {
@@ -43,6 +45,8 @@ interface CamelParkingLot {
   availableSpaces: number;
   lotType?: string;
   status?: string;
+  entryCount?: number;
+  exitCount?: number;
   createdAt?: CamelTimestamp;
   updatedAt?: CamelTimestamp;
 }
@@ -76,9 +80,9 @@ function mapParkingLot(b: CamelParkingLot): ParkingLot {
     availableSpots: availableSpaces,
     occupiedSpots,
     usageRate,
-    entryCount: 0,
-    exitCount: 0,
-    laneCount: 0,
+    entryCount: b.entryCount ?? 0,
+    exitCount: b.exitCount ?? 0,
+    laneCount: (b.entryCount ?? 0) + (b.exitCount ?? 0),
     createdAt: timestampToISO(b.createdAt),
     updatedAt: timestampToISO(b.updatedAt),
   };
@@ -161,13 +165,6 @@ export const parkingLotService = {
     if (data.address !== undefined) body.address = data.address;
     if (data.totalSpots !== undefined) body.totalSpaces = data.totalSpots;
     if (data.type !== undefined) body.lotType = LOT_TYPE_TO_BACKEND[data.type];
-    if (data.status !== undefined) {
-      const statusMap: Record<string, string> = {
-        operating: "PARKING_LOT_STATUS_ACTIVE",
-        suspended: "PARKING_LOT_STATUS_INACTIVE",
-      };
-      body.status = statusMap[data.status];
-    }
 
     const res = await apiClient.patch<Record<string, unknown>>(
       `/parking/v1/lots/${id}`,
@@ -180,14 +177,74 @@ export const parkingLotService = {
     await apiClient.delete(`/parking/v1/lots/${id}`);
   },
 
-  getLaneConfig(parkingLotId: string): Promise<LaneConfigResponse> {
-    return apiClient.get(`/api/parking-lots/${parkingLotId}/lanes`);
+  async getLaneConfig(parkingLotId: string): Promise<LaneConfigResponse> {
+    const res = await apiClient.get<Record<string, unknown>>(
+      `/parking/v1/lots/${parkingLotId}/lanes`
+    );
+    return mapLaneConfigResponse(res);
   },
 
-  updateLanes(
+  async updateLanes(
     parkingLotId: string,
     data: UpdateLanesRequest
   ): Promise<Lane[]> {
-    return apiClient.put(`/api/parking-lots/${parkingLotId}/lanes`, data);
+    const res = await apiClient.put<Record<string, unknown>>(
+      `/parking/v1/lots/${parkingLotId}/lanes`,
+      {
+        parkingLotId,
+        lanes: data.lanes.map((l) => ({
+          laneId: l.id || "",
+          name: l.name,
+          laneType: l.type === "entry" ? "LANE_TYPE_ENTRY" : "LANE_TYPE_EXIT",
+          deviceId: l.deviceId || "",
+        })),
+      }
+    );
+    const rawLanes = (res.lanes ?? []) as Record<string, unknown>[];
+    return rawLanes.map(mapLane);
   },
 };
+
+const LANE_TYPE_FROM_BACKEND: Record<string, import("@/types").LaneType> = {
+  LANE_TYPE_ENTRY: "entry",
+  LANE_TYPE_EXIT: "exit",
+};
+
+function mapLaneConfigResponse(
+  res: Record<string, unknown>
+): LaneConfigResponse {
+  const rawLanes = (res.lanes ?? []) as Record<string, unknown>[];
+  const rawDevices = (res.availableDevices ?? res.available_devices ?? []) as Record<string, unknown>[];
+
+  return {
+    lanes: rawLanes.map(mapLane),
+    availableDevices: rawDevices.map(
+      (d: Record<string, unknown>): DeviceOption => ({
+        id: (d.deviceId ?? d.device_id ?? "") as string,
+        name: (d.name ?? "") as string,
+        status: (d.status ?? "offline") as DeviceOnlineStatus,
+      })
+    ),
+  };
+}
+
+function mapLane(b: Record<string, unknown>): Lane {
+  const rawDevice = b.device as Record<string, unknown> | undefined;
+
+  return {
+    id: (b.laneId ?? b.lane_id ?? "") as string,
+    parkingLotId: (b.parkingLotId ?? b.parking_lot_id ?? "") as string,
+    name: (b.name ?? "") as string,
+    type: LANE_TYPE_FROM_BACKEND[(b.laneType ?? b.lane_type ?? "") as string] ?? "entry",
+    device: rawDevice
+      ? {
+          id: (rawDevice.deviceId ?? rawDevice.device_id ?? "") as string,
+          name: (rawDevice.name ?? "") as string,
+          status: (rawDevice.status ?? "offline") as DeviceOnlineStatus,
+          lastHeartbeat: rawDevice.lastHeartbeat
+            ? String(rawDevice.lastHeartbeat)
+            : undefined,
+        }
+      : undefined,
+  };
+}
