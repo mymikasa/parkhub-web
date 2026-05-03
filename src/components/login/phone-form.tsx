@@ -9,6 +9,7 @@ import { authService } from "@/lib/api/auth";
 import { smsLoginSchema } from "@/lib/api/contracts";
 import { ApiClientError } from "@/lib/api/client";
 import { cn } from "@/lib/utils";
+import { getFormErrorMessage } from "@/lib/form-errors";
 
 export function PhoneForm() {
   const { loginBySms } = useAuth();
@@ -104,7 +105,7 @@ export function PhoneForm() {
         <form.Field name="phone">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+              <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
             ) : null
           }
         </form.Field>
@@ -141,7 +142,7 @@ export function PhoneForm() {
         <form.Field name="code">
           {(field) =>
             field.state.meta.errors.length > 0 ? (
-              <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+              <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
             ) : null
           }
         </form.Field>

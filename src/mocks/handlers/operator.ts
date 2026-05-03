@@ -16,9 +16,8 @@ export const operatorHandlers = [
     return HttpResponse.json({ data: getOperatorExceptions() });
   }),
 
-  http.post("/api/operator/actions/lift-barrier", async ({ request }) => {
+  http.post("/api/operator/actions/lift-barrier", async () => {
     await delay(500);
-    const body = (await request.json()) as { parkingLotId: string; laneId: string };
     return HttpResponse.json({
       data: {
         success: true,

@@ -4,7 +4,14 @@ import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Modal } from "@/components/shared/modal";
 import { createParkingLotSchema } from "@/lib/api/contracts";
+import { getFormErrorMessage } from "@/lib/form-errors";
 import { parkingLotService } from "@/lib/api/parking-lots";
+import type { CreateParkingLotRequest, ParkingLotType } from "@/types";
+
+function validateCreateParkingLot({ value }: { value: unknown }) {
+  const result = createParkingLotSchema.safeParse(value);
+  return result.success ? undefined : result.error;
+}
 
 interface CreateParkingLotModalProps {
   open: boolean;
@@ -17,15 +24,21 @@ export function CreateParkingLotModal({ open, onClose, onSuccess }: CreateParkin
   const [error, setError] = useState("");
 
   const form = useForm({
-    defaultValues: { name: "", address: "", totalSpots: 0 as number, type: "ground" as string },
+    defaultValues: { name: "", address: "", totalSpots: 0 as number, type: "ground" as ParkingLotType },
     validators: {
-      onChange: createParkingLotSchema as any,
+      onChange: validateCreateParkingLot,
     },
     onSubmit: async ({ value }) => {
       setSubmitting(true);
       setError("");
       try {
-        await parkingLotService.create(value as any);
+        const request: CreateParkingLotRequest = {
+          name: value.name,
+          address: value.address,
+          totalSpots: value.totalSpots,
+          type: value.type,
+        };
+        await parkingLotService.create(request);
         onSuccess();
         handleClose();
       } catch (e) {
@@ -85,7 +98,7 @@ export function CreateParkingLotModal({ open, onClose, onSuccess }: CreateParkin
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -106,7 +119,7 @@ export function CreateParkingLotModal({ open, onClose, onSuccess }: CreateParkin
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -129,7 +142,7 @@ export function CreateParkingLotModal({ open, onClose, onSuccess }: CreateParkin
                     className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                    <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                   )}
                 </>
               )}
@@ -143,7 +156,7 @@ export function CreateParkingLotModal({ open, onClose, onSuccess }: CreateParkin
               {(field) => (
                 <select
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
+                  onChange={(e) => field.handleChange(e.target.value as ParkingLotType)}
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 bg-white transition-colors"
                 >
                   <option value="underground">地下停车场</option>

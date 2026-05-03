@@ -9,10 +9,10 @@ interface LiftBarrierModalProps {
   onClose: () => void;
   onSubmit: (data: { parkingLotId: string; laneId: string; reason: string }) => void;
   loading: boolean;
-  exceptions: OperatorException[];
+  exceptions?: OperatorException[];
 }
 
-export function LiftBarrierModal({ open, onClose, onSubmit, loading, exceptions }: LiftBarrierModalProps) {
+export function LiftBarrierModal({ open, onClose, onSubmit, loading }: LiftBarrierModalProps) {
   const [parkingLotId, setParkingLotId] = useState("");
   const [laneId, setLaneId] = useState("");
   const [reason, setReason] = useState("");

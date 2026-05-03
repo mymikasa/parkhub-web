@@ -24,7 +24,6 @@ export function useProfile() {
 
 export function useUpdateProfile() {
   const qc = useQueryClient();
-  const { user } = useAuth();
 
   return useMutation({
     mutationFn: (data: UpdateProfileFormData) => authService.updateProfile(data),

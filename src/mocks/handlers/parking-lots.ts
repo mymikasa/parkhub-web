@@ -3,6 +3,7 @@ import {
   mockParkingLots,
   mockLanes,
   mockLaneDevices,
+  type MockLane,
   getParkingLotStats,
   getLaneConfigByParkingLotId,
 } from "../data/parking-lots";
@@ -143,6 +144,7 @@ export const parkingLotHandlers = [
 ];
 
 export const laneHandlers = [
+  // Legacy mock path (kept for backward compat)
   http.get("/api/parking-lots/:id/lanes", async ({ params }) => {
     await delay(200);
     const id = params.id as string;
@@ -197,5 +199,95 @@ export const laneHandlers = [
     mockLanes.push(...updatedLanes);
 
     return HttpResponse.json({ data: updatedLanes });
+  }),
+
+  // Real API path (proto-style snake_case, apiClient auto-converts)
+  http.get("/parking/v1/lots/:id/lanes", async ({ params }) => {
+    await delay(200);
+    const id = params.id as string;
+    const config = getLaneConfigByParkingLotId(id);
+
+    return HttpResponse.json({
+      lanes: config.lanes.map((l: MockLane) => ({
+        lane_id: l.id,
+        parking_lot_id: l.parkingLotId,
+        name: l.name,
+        lane_type: l.type === "entry" ? "LANE_TYPE_ENTRY" : "LANE_TYPE_EXIT",
+        device_id: l.device ? l.device.id : "",
+        device: l.device
+          ? {
+              device_id: l.device.id,
+              name: l.device.name,
+              status: l.device.status,
+            }
+          : null,
+      })),
+      available_devices: config.availableDevices.map((d) => ({
+        device_id: d.id,
+        name: d.name,
+        status: d.status,
+      })),
+    });
+  }),
+
+  http.put("/parking/v1/lots/:id/lanes", async ({ params, request }) => {
+    await delay(600);
+    const id = params.id as string;
+    const body = (await request.json()) as {
+      lanes: Array<{
+        lane_id?: string;
+        name: string;
+        lane_type: string;
+        device_id?: string;
+      }>;
+    };
+
+    // Full replace strategy
+    const toRemove = mockLanes.filter((l) => l.parkingLotId === id);
+    for (const lane of toRemove) {
+      const i = mockLanes.indexOf(lane);
+      if (i !== -1) mockLanes.splice(i, 1);
+    }
+
+    const updatedLanes = body.lanes.map((laneData) => {
+      const device = laneData.device_id
+        ? mockLaneDevices.find((d) => d.id === laneData.device_id)
+        : undefined;
+      const laneType = laneData.lane_type === "LANE_TYPE_ENTRY" ? "entry" : "exit";
+
+      if (laneData.lane_id) {
+        return {
+          id: laneData.lane_id,
+          parkingLotId: id,
+          name: laneData.name,
+          type: laneType as "entry" | "exit",
+          device: device ? { ...device } : undefined,
+        };
+      }
+
+      laneIdCounter++;
+      return {
+        id: `lane_${String(laneIdCounter).padStart(3, "0")}`,
+        parkingLotId: id,
+        name: laneData.name,
+        type: laneType as "entry" | "exit",
+        device: device ? { ...device } : undefined,
+      };
+    });
+
+    mockLanes.push(...updatedLanes);
+
+    return HttpResponse.json({
+      lanes: updatedLanes.map((l) => ({
+        lane_id: l.id,
+        parking_lot_id: l.parkingLotId,
+        name: l.name,
+        lane_type: l.type === "entry" ? "LANE_TYPE_ENTRY" : "LANE_TYPE_EXIT",
+        device_id: l.device ? l.device.id : "",
+        device: l.device
+          ? { device_id: l.device.id, name: l.device.name, status: l.device.status }
+          : null,
+      })),
+    });
   }),
 ];

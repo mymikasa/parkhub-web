@@ -4,7 +4,13 @@ import { useState } from "react";
 import { useForm } from "@tanstack/react-form";
 import { Modal } from "@/components/shared/modal";
 import { createTenantSchema } from "@/lib/api/contracts";
-import type { Tenant } from "@/types";
+import { getFormErrorMessage } from "@/lib/form-errors";
+import type { CreateTenantRequest, Tenant } from "@/types";
+
+function validateCreateTenant({ value }: { value: unknown }) {
+  const result = createTenantSchema.safeParse(value);
+  return result.success ? undefined : result.error;
+}
 
 interface CreateTenantModalProps {
   open: boolean;
@@ -37,9 +43,9 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
           contactPhone: "",
           adminEmail: "",
           remark: "",
-        },
+    },
     validators: {
-      onChange: createTenantSchema as any,
+      onChange: validateCreateTenant,
     },
     onSubmit: async ({ value }) => {
       setLoading(true);
@@ -49,7 +55,16 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
         if (isEdit && tenant) {
           await tenantService.update(tenant.id, value);
         } else {
-          await tenantService.create(value);
+          const request: CreateTenantRequest = {
+            companyName: value.companyName,
+            description: value.description,
+            creditCode: value.creditCode,
+            contactPerson: value.contactPerson,
+            contactPhone: value.contactPhone,
+            adminEmail: value.adminEmail,
+            remark: value.remark,
+          };
+          await tenantService.create(request);
         }
         onSuccess();
         onClose();
@@ -101,7 +116,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -149,7 +164,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
                     className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                    <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                   )}
                 </>
               )}
@@ -170,7 +185,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
                     className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                    <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                   )}
                 </>
               )}
@@ -190,7 +205,7 @@ export function CreateTenantModal({ open, onClose, onSuccess, tenant }: CreateTe
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="mt-1 text-xs text-red-500">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="mt-1 text-xs text-red-500">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}

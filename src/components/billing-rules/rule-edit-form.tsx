@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { BillingRule, BillingCycle } from "@/types";
 
 interface RuleEditFormProps {
@@ -15,21 +15,32 @@ interface RuleEditFormProps {
 }
 
 export function RuleEditForm({ rule, onSave, saving }: RuleEditFormProps) {
-  const [freeDuration, setFreeDuration] = useState(15);
-  const [unitPrice, setUnitPrice] = useState(8);
-  const [dailyCap, setDailyCap] = useState(64);
-  const [noLimit, setNoLimit] = useState(false);
-  const [billingCycle, setBillingCycle] = useState<BillingCycle>("hourly");
+  if (!rule) return null;
 
-  useEffect(() => {
-    if (rule) {
-      setFreeDuration(rule.freeDurationMinutes);
-      setUnitPrice(rule.unitPrice);
-      setDailyCap(rule.dailyCap ?? 0);
-      setNoLimit(rule.dailyCap === null);
-      setBillingCycle(rule.billingCycle);
-    }
-  }, [rule]);
+  return (
+    <RuleEditFields
+      key={rule.id}
+      rule={rule}
+      onSave={onSave}
+      saving={saving}
+    />
+  );
+}
+
+function RuleEditFields({
+  rule,
+  onSave,
+  saving,
+}: {
+  rule: BillingRule;
+  onSave: RuleEditFormProps["onSave"];
+  saving: boolean;
+}) {
+  const [freeDuration, setFreeDuration] = useState(rule.freeDurationMinutes);
+  const [unitPrice, setUnitPrice] = useState(rule.unitPrice);
+  const [dailyCap, setDailyCap] = useState(rule.dailyCap ?? 0);
+  const [noLimit, setNoLimit] = useState(rule.dailyCap === null);
+  const [billingCycle, setBillingCycle] = useState<BillingCycle>(rule.billingCycle);
 
   const handleReset = () => {
     if (rule) {
@@ -49,8 +60,6 @@ export function RuleEditForm({ rule, onSave, saving }: RuleEditFormProps) {
       billingCycle,
     });
   };
-
-  if (!rule) return null;
 
   return (
     <div className="bg-white rounded-xl border border-surface-border overflow-hidden">

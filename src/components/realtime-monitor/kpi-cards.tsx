@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { MonitorKPI } from "@/types";
 
 interface KpiCardsProps {

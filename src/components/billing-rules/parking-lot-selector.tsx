@@ -1,17 +1,13 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import type { BillingLotOption, ParkingLotStatus } from "@/types";
+import type { BillingLotOption } from "@/types";
 
 interface ParkingLotSelectorProps {
   lots: BillingLotOption[];
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
-
-const lotIcons: Record<string, { icon: string; gradient: string }> = {
-  default: { icon: "building", gradient: "from-blue-500 to-blue-600" },
-};
 
 export function ParkingLotSelector({ lots, selectedId, onSelect }: ParkingLotSelectorProps) {
   return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { ROUTES } from "@/lib/constants";
@@ -9,20 +9,17 @@ import { loadSession } from "@/lib/session/storage";
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
-  const [checked, setChecked] = useState(false);
+  const hasStoredSession = loadSession() !== null;
 
   useEffect(() => {
     if (isLoading) return;
 
-    if (!isAuthenticated && !loadSession()) {
+    if (!isAuthenticated && !hasStoredSession) {
       router.replace(ROUTES.LOGIN);
-      return;
     }
+  }, [hasStoredSession, isAuthenticated, isLoading, router]);
 
-    setChecked(true);
-  }, [isAuthenticated, isLoading, router]);
-
-  if (isLoading || !checked) {
+  if (isLoading || (!isAuthenticated && !hasStoredSession)) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-surface-muted">
         <div className="flex flex-col items-center gap-3">

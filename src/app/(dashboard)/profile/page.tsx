@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useProfile, useUpdateProfile } from "@/hooks/use-profile";
-import { updateProfileSchema, type UpdateProfileFormData } from "@/lib/api/contracts";
+import { updateProfileSchema } from "@/lib/api/contracts";
 import { useAuth } from "@/contexts/auth-context";
 import { ApiClientError } from "@/lib/api/client";
 

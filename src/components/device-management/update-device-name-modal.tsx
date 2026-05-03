@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Modal } from "@/components/shared/modal";
 
 interface UpdateDeviceNameModalProps {
@@ -12,11 +12,20 @@ interface UpdateDeviceNameModalProps {
 }
 
 export function UpdateDeviceNameModal({ open, onClose, onSubmit, deviceName, loading = false }: UpdateDeviceNameModalProps) {
-  const [name, setName] = useState(deviceName);
+  return (
+    <UpdateDeviceNameModalContent
+      key={`${open}-${deviceName}`}
+      open={open}
+      onClose={onClose}
+      onSubmit={onSubmit}
+      deviceName={deviceName}
+      loading={loading}
+    />
+  );
+}
 
-  useEffect(() => {
-    if (open) setName(deviceName);
-  }, [open, deviceName]);
+function UpdateDeviceNameModalContent({ open, onClose, onSubmit, deviceName, loading = false }: UpdateDeviceNameModalProps) {
+  const [name, setName] = useState(deviceName);
 
   const handleSubmit = () => {
     if (!name.trim()) return;

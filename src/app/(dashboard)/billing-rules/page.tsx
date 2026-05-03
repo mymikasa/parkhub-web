@@ -19,11 +19,11 @@ export default function BillingRulesPage() {
   const { data: billingRules = [], isLoading: rulesLoading, isError: rulesError, refetch } = useBillingRules();
   const { data: lotsData, isLoading: lotsLoading } = useParkingLots({ page: 1, pageSize: 100 });
 
-  const parkingLots = lotsData?.data ?? [];
   const loading = rulesLoading || lotsLoading;
   const updateRule = useUpdateBillingRule();
 
   const billingLotOptions: BillingLotOption[] = useMemo(() => {
+    const parkingLots = lotsData?.data ?? [];
     const ruleLotIds = new Set(billingRules.map((r: BillingRule) => r.parkingLotId));
     return parkingLots.map((lot) => ({
       id: lot.id,
@@ -31,7 +31,7 @@ export default function BillingRulesPage() {
       status: lot.status,
       hasRule: ruleLotIds.has(lot.id),
     }));
-  }, [parkingLots, billingRules]);
+  }, [lotsData, billingRules]);
 
   const selectedRule = useMemo(
     () => billingRules.find((r: BillingRule) => r.parkingLotId === selectedLotId) ?? null,

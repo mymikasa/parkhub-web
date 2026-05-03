@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { billingService } from "@/lib/api/billing";
-import type { BillingRule, BillingRuleListParams, UpdateBillingRuleRequest, CalculateFeeRequest, CalculateFeeResult } from "@/types";
+import type { BillingRuleListParams, UpdateBillingRuleRequest, CalculateFeeRequest } from "@/types";
 
 export const billingKeys = {
   all: ["billing"] as const,

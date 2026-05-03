@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useCallback, useState, useMemo } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { DataTable } from "@/components/shared/data-table";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
@@ -11,7 +11,7 @@ import { ExceptionHandleModal } from "@/components/entry-exit-records/exception-
 import { getRecordColumns } from "@/components/entry-exit-records/record-columns";
 import { useRecords, useRecordSummary, useHandleException, useExportRecords } from "@/hooks/use-records";
 import { useParkingLots } from "@/hooks/use-parking-lots";
-import type { EntryExitRecord, RecordFilters, ParkingLot } from "@/types";
+import type { EntryExitRecord, RecordFilters } from "@/types";
 
 export default function EntryExitRecordsPage() {
   const [filters, setFilters] = useState<RecordFilters>({ page: 1, pageSize: 10 });
@@ -43,15 +43,15 @@ export default function EntryExitRecordsPage() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleViewDetail = (record: EntryExitRecord) => {
+  const handleViewDetail = useCallback((record: EntryExitRecord) => {
     setSelectedRecord(record);
     setDetailOpen(true);
-  };
+  }, []);
 
-  const handleOpenException = (record: EntryExitRecord) => {
+  const handleOpenException = useCallback((record: EntryExitRecord) => {
     setSelectedException(record);
     setExceptionOpen(true);
-  };
+  }, []);
 
   const handleExceptionSubmit = async (plateNumber: string, remark: string) => {
     if (!selectedException) return;
@@ -70,8 +70,7 @@ export default function EntryExitRecordsPage() {
 
   const columns = useMemo(
     () => getRecordColumns({ onViewDetail: handleViewDetail, onHandleException: handleOpenException }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    []
+    [handleOpenException, handleViewDetail]
   );
 
   return (

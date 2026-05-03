@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { recordService } from "@/lib/api/records";
-import type { RecordFilters, RecordSummary, ExceptionHandleRequest } from "@/types";
+import type { RecordFilters, ExceptionHandleRequest } from "@/types";
 
 export const recordKeys = {
   all: ["records"] as const,

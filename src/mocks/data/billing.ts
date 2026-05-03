@@ -1,5 +1,4 @@
-import type { BillingRule, CalculateFeeRequest, CalculateFeeResult } from "@/types";
-import { mockParkingLots } from "./parking-lots";
+import type { BillingRule, CalculateFeeResult } from "@/types";
 
 export const mockBillingRules: BillingRule[] = [
   {

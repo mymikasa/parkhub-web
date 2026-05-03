@@ -26,6 +26,13 @@ interface LaneEditItem {
   };
 }
 
+type LaneType = LaneEditItem["type"];
+
+const LANE_TYPE_LABEL: Record<LaneType, string> = {
+  entry: "入口",
+  exit: "出口",
+};
+
 export function LaneConfigModal({
   open,
   onClose,
@@ -39,6 +46,7 @@ export function LaneConfigModal({
   const [error, setError] = useState("");
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState<LaneType>("entry");
   const [editDeviceId, setEditDeviceId] = useState("");
 
   const loadData = useCallback(async () => {
@@ -78,12 +86,11 @@ export function LaneConfigModal({
     }
   }, [open, loadData]);
 
-  const handleAddLane = () => {
-    const entryCount = lanes.filter((l) => l.type === "entry").length;
-    const exitCount = lanes.filter((l) => l.type === "exit").length;
+  const handleAddLane = (type: LaneType) => {
+    const typeCount = lanes.filter((l) => l.type === type).length;
     const newLane: LaneEditItem = {
-      name: `${entryCount + exitCount + 1}号入口`,
-      type: "entry",
+      name: `${typeCount + 1}号${LANE_TYPE_LABEL[type]}`,
+      type,
     };
     setLanes([...lanes, newLane]);
   };
@@ -91,6 +98,7 @@ export function LaneConfigModal({
   const handleStartEdit = (index: number) => {
     setEditingIndex(index);
     setEditName(lanes[index].name);
+    setEditType(lanes[index].type);
     setEditDeviceId(lanes[index].deviceId || "");
   };
 
@@ -99,6 +107,7 @@ export function LaneConfigModal({
     updated[index] = {
       ...updated[index],
       name: editName,
+      type: editType,
       deviceId: editDeviceId || undefined,
     };
     setLanes(updated);
@@ -107,7 +116,13 @@ export function LaneConfigModal({
 
   const handleRemoveLane = (index: number) => {
     setLanes(lanes.filter((_, i) => i !== index));
-    if (editingIndex === index) setEditingIndex(null);
+    if (editingIndex === index) {
+      setEditingIndex(null);
+      return;
+    }
+    if (editingIndex !== null && editingIndex > index) {
+      setEditingIndex(editingIndex - 1);
+    }
   };
 
   const handleSave = async () => {
@@ -179,15 +194,26 @@ export function LaneConfigModal({
             <span className="text-sm font-medium text-gray-700">
               出入口列表
             </span>
-            <button
-              onClick={handleAddLane}
-              className="text-sm text-brand-600 hover:text-brand-700 font-medium flex items-center gap-1 transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              添加出入口
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleAddLane("entry")}
+                className="text-sm text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14" />
+                </svg>
+                添加入口
+              </button>
+              <button
+                onClick={() => handleAddLane("exit")}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+                添加出口
+              </button>
+            </div>
           </div>
 
           <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -209,12 +235,12 @@ export function LaneConfigModal({
                       <div
                         className={cn(
                           "w-10 h-10 rounded-lg flex items-center justify-center shrink-0",
-                          lane.type === "entry"
+                          editType === "entry"
                             ? "bg-emerald-100"
                             : "bg-blue-100"
                         )}
                       >
-                        {lane.type === "entry" ? (
+                        {editType === "entry" ? (
                           <svg className="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
                           </svg>
@@ -230,6 +256,14 @@ export function LaneConfigModal({
                           onChange={(e) => setEditName(e.target.value)}
                           className="w-full h-8 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500"
                         />
+                        <select
+                          value={editType}
+                          onChange={(e) => setEditType(e.target.value as LaneType)}
+                          className="w-full h-8 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 bg-white"
+                        >
+                          <option value="entry">入口</option>
+                          <option value="exit">出口</option>
+                        </select>
                         <select
                           value={editDeviceId}
                           onChange={(e) => setEditDeviceId(e.target.value)}
@@ -324,14 +358,12 @@ export function LaneConfigModal({
                         >
                           编辑
                         </button>
-                        {!lane.id && (
-                          <button
-                            onClick={() => handleRemoveLane(index)}
-                            className="text-xs text-red-400 hover:text-red-600 transition-colors"
-                          >
-                            删除
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleRemoveLane(index)}
+                          className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          删除
+                        </button>
                       </div>
                     </>
                   )}

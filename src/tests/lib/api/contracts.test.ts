@@ -1,5 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { z } from "zod";
+import { describe, it, expect } from "vitest";
 import { loginSchema, smsLoginSchema } from "@/lib/api/contracts";
 
 describe("loginSchema validation", () => {

@@ -1,7 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import type { Device, ParkingLot } from "@/types";
+import type { Device } from "@/types";
 
 interface BatchActionBarProps {
   selectedDevices: Device[];

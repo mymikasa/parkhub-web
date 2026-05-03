@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { deviceService } from "@/lib/api/devices";
-import type { Device, DeviceStats, DeviceFilters, CreateDeviceRequest, UpdateDeviceNameRequest, BindDeviceRequest, BatchIdsRequest, BatchBindRequest, DeviceCommandRequest } from "@/types";
+import type { DeviceFilters, CreateDeviceRequest, UpdateDeviceNameRequest, BindDeviceRequest, BatchIdsRequest, BatchBindRequest, DeviceCommandRequest } from "@/types";
 
 export const deviceKeys = {
   all: ["devices"] as const,

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { tenantService } from "@/lib/api/tenants";
-import type { Tenant, TenantSummary, TenantFilters, CreateTenantRequest, UpdateTenantRequest } from "@/types";
+import type { TenantFilters, CreateTenantRequest, UpdateTenantRequest } from "@/types";
 
 export const tenantKeys = {
   all: ["tenants"] as const,

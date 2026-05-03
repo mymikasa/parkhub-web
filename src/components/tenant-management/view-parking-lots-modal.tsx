@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Modal } from "@/components/shared/modal";
 import { LoadingSkeleton } from "@/components/shared/loading-skeleton";
-import { parkingLotService } from "@/lib/api/parking-lots";
 import type { Tenant, ParkingLot } from "@/types";
 
 interface ViewParkingLotsModalProps {

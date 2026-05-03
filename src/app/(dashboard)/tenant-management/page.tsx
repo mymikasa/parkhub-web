@@ -74,7 +74,6 @@ export default function TenantManagementPage() {
     }
   };
 
-  const totalPages = Math.ceil(total / pageSize);
   const columns = tenantColumns(handleEdit, handleViewLots, handleToggleFreeze);
 
   return (

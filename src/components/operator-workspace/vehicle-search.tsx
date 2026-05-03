@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import type { VehicleSearchResult } from "@/types";
-import type { OperatorException } from "@/types";
 
 interface VehicleSearchProps {
   onSearch: (plateNumber: string) => Promise<VehicleSearchResult | null>;

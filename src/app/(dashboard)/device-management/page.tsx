@@ -18,7 +18,7 @@ import { getDeviceColumns } from "@/components/device-management/device-columns"
 import { useDevices, useDeviceStats, useCreateDevice, useUpdateDeviceName, useDeleteDevice, useBindDevice, useUnbindDevice, useDisableDevice, useEnableDevice, useBatchDisableDevices, useBatchEnableDevices, useBatchDeleteDevices, useBatchBindDevices, useSendDeviceCommand } from "@/hooks/use-devices";
 import { useParkingLots } from "@/hooks/use-parking-lots";
 import { cn } from "@/lib/utils";
-import type { Device, DeviceFilters, DeviceStatus } from "@/types";
+import type { CreateDeviceRequest, Device, DeviceFilters, DeviceStatus } from "@/types";
 
 type StatusTab = "all" | "pending" | "active" | "offline" | "disabled";
 
@@ -39,7 +39,7 @@ export default function DeviceManagementPage() {
   const { data: stats } = useDeviceStats();
   const { data: parkingLotsData } = useParkingLots({ pageSize: 100 });
 
-  const devices = deviceData?.data ?? [];
+  const devices = useMemo(() => deviceData?.data ?? [], [deviceData]);
   const total = deviceData?.total ?? 0;
   const parkingLots = parkingLotsData?.data ?? [];
 
@@ -83,8 +83,8 @@ export default function DeviceManagementPage() {
     setFilters((prev) => ({ ...prev, page }));
   };
 
-  const handleCreate = async (data: { id: string; name?: string; type: string; firmwareVersion?: string }) => {
-    await createDevice.mutateAsync(data as any);
+  const handleCreate = async (data: CreateDeviceRequest) => {
+    await createDevice.mutateAsync(data);
     setCreateOpen(false);
   };
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ApiClientError, apiClient } from "@/lib/api/client";
+import { ApiClientError } from "@/lib/api/client";
 
 describe("ApiClientError", () => {
   it("creates error with correct properties", () => {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { parkingLotService } from "@/lib/api/parking-lots";
-import type { ParkingLot, ParkingLotSummary, ParkingLotStatus, ParkingLotType, PaginatedResponse } from "@/types";
+import type { ParkingLotStatus, ParkingLotType } from "@/types";
 
 export const parkingLotKeys = {
   all: ["parking-lots"] as const,

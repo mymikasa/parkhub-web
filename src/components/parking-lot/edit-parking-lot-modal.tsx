@@ -1,17 +1,94 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "@tanstack/react-form";
+import { Check, ChevronDown } from "lucide-react";
 import { Modal } from "@/components/shared/modal";
 import { updateParkingLotSchema } from "@/lib/api/contracts";
+import { getFormErrorMessage } from "@/lib/form-errors";
 import { parkingLotService } from "@/lib/api/parking-lots";
-import type { ParkingLot } from "@/types";
+import type { ParkingLot, ParkingLotStatus, ParkingLotType, UpdateParkingLotRequest } from "@/types";
 
 interface EditParkingLotModalProps {
   open: boolean;
   onClose: () => void;
   onSuccess: () => void;
   parkingLot: ParkingLot | null;
+}
+
+interface SelectOption {
+  value: string;
+  label: string;
+}
+
+function validateUpdateParkingLot({ value }: { value: unknown }) {
+  const result = updateParkingLotSchema.safeParse(value);
+  return result.success ? undefined : result.error;
+}
+
+function StyledSelect({
+  value,
+  options,
+  onChange,
+}: {
+  value: string;
+  options: SelectOption[];
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const selected = options.find((option) => option.value === value) ?? options[0];
+
+  useEffect(() => {
+    if (!open) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [open]);
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((current) => !current)}
+        className="flex h-11 w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-4 text-left text-sm font-medium text-gray-800 shadow-sm transition-colors hover:border-gray-300 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/10"
+      >
+        <span>{selected?.label}</span>
+        <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-[60] mt-1 overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+          {options.map((option) => {
+            const active = option.value === value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setOpen(false);
+                }}
+                className={`flex h-10 w-full items-center justify-between px-4 text-left text-sm transition-colors ${
+                  active ? "bg-brand-50 font-medium text-brand-700" : "text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>{option.label}</span>
+                {active && <Check className="h-4 w-4" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: EditParkingLotModalProps) {
@@ -23,20 +100,23 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
       name: "",
       address: "",
       totalSpots: 0 as number,
-      type: "ground" as string,
-      status: "operating" as string,
+      type: "ground" as ParkingLotType,
+      status: "operating" as ParkingLotStatus,
     },
     validators: {
-      onChange: updateParkingLotSchema as any,
+      onChange: validateUpdateParkingLot,
     },
     onSubmit: async ({ value }) => {
       if (!parkingLot) return;
       setSubmitting(true);
       setError("");
       try {
-        const cleanData = Object.fromEntries(
-          Object.entries(value).filter(([, v]) => v !== undefined && v !== "")
-        );
+        const cleanData: UpdateParkingLotRequest = {};
+        if (value.name) cleanData.name = value.name;
+        if (value.address) cleanData.address = value.address;
+        if (value.totalSpots !== undefined) cleanData.totalSpots = value.totalSpots;
+        if (value.type) cleanData.type = value.type;
+        if (value.status) cleanData.status = value.status;
         await parkingLotService.update(parkingLot.id, cleanData);
         onSuccess();
         handleClose();
@@ -58,7 +138,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
         status: parkingLot.status,
       });
     }
-  }, [open, parkingLot]);
+  }, [form, open, parkingLot]);
 
   const handleClose = () => {
     form.reset();
@@ -108,7 +188,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -128,7 +208,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                   className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                 />
                 {field.state.meta.errors.length > 0 && (
-                  <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                  <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                 )}
               </>
             )}
@@ -150,7 +230,7 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
                     className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 transition-colors"
                   />
                   {field.state.meta.errors.length > 0 && (
-                    <p className="text-red-500 text-xs mt-1">{typeof field.state.meta.errors[0] === "string" ? field.state.meta.errors[0] : (field.state.meta.errors[0] as any)?.message ?? ""}</p>
+                    <p className="text-red-500 text-xs mt-1">{getFormErrorMessage(field.state.meta.errors[0])}</p>
                   )}
                 </>
               )}
@@ -162,15 +242,15 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
             </label>
             <form.Field name="type">
               {(field) => (
-                <select
+                <StyledSelect
                   value={field.state.value}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                  className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 bg-white transition-colors"
-                >
-                  <option value="underground">地下停车场</option>
-                  <option value="ground">地面停车场</option>
-                  <option value="mechanical">立体车库</option>
-                </select>
+                  onChange={(value) => field.handleChange(value as ParkingLotType)}
+                  options={[
+                    { value: "underground", label: "地下停车场" },
+                    { value: "ground", label: "地面停车场" },
+                    { value: "mechanical", label: "立体车库" },
+                  ]}
+                />
               )}
             </form.Field>
           </div>
@@ -181,14 +261,14 @@ export function EditParkingLotModal({ open, onClose, onSuccess, parkingLot }: Ed
           </label>
           <form.Field name="status">
             {(field) => (
-              <select
+              <StyledSelect
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="w-full h-11 px-4 rounded-lg border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/10 bg-white transition-colors"
-              >
-                <option value="operating">运营中</option>
-                <option value="suspended">暂停运营</option>
-              </select>
+                onChange={(value) => field.handleChange(value as ParkingLotStatus)}
+                options={[
+                  { value: "operating", label: "运营中" },
+                  { value: "suspended", label: "暂停运营" },
+                ]}
+              />
             )}
           </form.Field>
         </div>
