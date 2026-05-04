@@ -80,6 +80,15 @@ async function refreshAccessToken(): Promise<boolean> {
   const session = getSession();
   if (!session?.refreshToken) return false;
 
+  const hasNewerSession = () => {
+    const latest = getSession();
+    return (
+      !!latest?.accessToken &&
+      !!latest.refreshToken &&
+      latest.refreshToken !== session.refreshToken
+    );
+  };
+
   try {
     const res = await fetch(resolveUrl("/identity/v1/auth/refresh"), {
       method: "POST",
@@ -87,7 +96,7 @@ async function refreshAccessToken(): Promise<boolean> {
       body: JSON.stringify({ refresh_token: session.refreshToken }),
     });
 
-    if (!res.ok) return false;
+    if (!res.ok) return hasNewerSession();
 
     const json = await res.json();
     const data = keysToCamel<{
@@ -106,7 +115,7 @@ async function refreshAccessToken(): Promise<boolean> {
     );
     return true;
   } catch {
-    return false;
+    return hasNewerSession();
   }
 }
 

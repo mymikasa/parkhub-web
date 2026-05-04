@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { User } from "@/types";
 import { authService, mapBackendUser } from "@/lib/api/auth";
+import { ApiClientError } from "@/lib/api/client";
 import {
   saveSession,
   loadSession,
@@ -64,12 +65,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .getCurrentUser()
       .then(({ user }) => {
         const mapped = mapBackendUser(user);
-        saveSession({ ...session, user: mapped });
+        const latestSession = loadSession();
+        if (latestSession) {
+          saveSession({ ...latestSession, user: mapped });
+        }
         setState({ user: mapped, isLoading: false, isAuthenticated: true });
       })
-      .catch(() => {
-        clearSession();
-        setState({ user: null, isLoading: false, isAuthenticated: false });
+      .catch((err) => {
+        if (err instanceof ApiClientError && err.status === 401) {
+          clearSession();
+          setState({ user: null, isLoading: false, isAuthenticated: false });
+          return;
+        }
+        setState({ user: session.user, isLoading: false, isAuthenticated: true });
       });
   }, []);
 
