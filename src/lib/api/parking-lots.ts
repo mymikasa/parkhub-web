@@ -213,8 +213,9 @@ const LANE_TYPE_FROM_BACKEND: Record<string, import("@/types").LaneType> = {
 function mapLaneConfigResponse(
   res: Record<string, unknown>
 ): LaneConfigResponse {
-  const rawLanes = (res.lanes ?? []) as Record<string, unknown>[];
-  const rawDevices = (res.availableDevices ?? res.available_devices ?? []) as Record<string, unknown>[];
+  const rawLanes = (Array.isArray(res.lanes) ? res.lanes : []) as Record<string, unknown>[];
+  const rawDevicesVal = res.availableDevices ?? res.available_devices ?? [];
+  const rawDevices = (Array.isArray(rawDevicesVal) ? rawDevicesVal : []) as Record<string, unknown>[];
 
   return {
     lanes: rawLanes.map(mapLane),
